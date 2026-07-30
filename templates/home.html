@@ -1,0 +1,102 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+CMAH | مرکز خدمات آنلاین
+{% endblock %}
+
+{% block content %}
+
+{% include "includes/header.html" %}
+
+<section class="hero py-5">
+    <div class="container">
+
+        <div class="row align-items-center gy-5">
+
+            <div class="col-lg-6">
+<div class="alert alert-success d-inline-flex align-items-center px-4 py-2 mb-4">
+
+    <i class="bi bi-lightning-charge-fill ms-2"></i>
+
+    بیش از ۵۰ خدمت آنلاین بدون مراجعه حضوری
+
+</div>
+                <span class="badge bg-primary px-3 py-2 mb-3">
+                    مرکز خدمات آنلاین
+                </span>
+
+                <h1 class="display-4 fw-bold mt-3 mb-4">
+
+                    کارهای اداری را آنلاین،
+                    <br>
+                    سریع و مطمئن انجام دهید.
+
+                </h1>
+
+                <p class="lead text-secondary mb-4">
+
+                    از ثبت‌نام و استعلام گرفته تا خدمات قضایی،
+                    بانکی، مالیاتی، بیمه و ده‌ها خدمت دیگر را
+                    بدون مراجعه حضوری انجام دهید.
+
+                </p>
+
+                {% include "includes/search-box.html" %}
+
+            </div>
+
+            <div class="col-lg-6 text-center">
+
+                <img
+                    src="https://placehold.co/600x500?text=CMAH"
+                    class="img-fluid"
+                    alt="CMAH">
+
+            </div>
+
+        </div>
+
+    </div>
+</section>
+<!-- خدمات پرکاربرد -->
+<section class="py-5 bg-light">
+
+    <div class="container">
+
+        <h2 class="fw-bold mb-4">
+            خدمات پرکاربرد
+        </h2>
+
+        <div class="row g-4">
+
+            {% for i in "123456" %}
+
+            <div class="col-md-4 col-lg-2">
+
+                <div class="card h-100 border-0 shadow-sm">
+
+                    <div class="card-body text-center">
+
+                        <i class="bi bi-file-earmark-text fs-1 text-primary"></i>
+
+                        <h6 class="mt-3">
+                            ثبت نام ثنا
+                        </h6>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+</section>
+
+{% include "includes/footer.html" %}
+
+{% endblock %}
