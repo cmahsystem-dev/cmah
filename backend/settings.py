@@ -163,3 +163,6 @@ CKEDITOR_5_CONFIGS = {
         ],
     },
 }
+
+OTP_EXPIRY_MINUTES = 2
+OTP_MAX_ATTEMPTS = 5
