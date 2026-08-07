@@ -1,102 +1,364 @@
 {% extends "layouts/base.html" %}
 
 {% block title %}
-CMAH | مرکز خدمات آنلاین
+    {{ site.seo_title|default:site.site_name|default:"CMAH" }}
+{% endblock %}
+
+{% block meta_description %}
+    {{ site.seo_description|default:site.site_description }}
 {% endblock %}
 
 {% block content %}
 
-{% include "includes/header.html" %}
-
+{% if hero %}
 <section class="hero py-5">
     <div class="container">
-
         <div class="row align-items-center gy-5">
 
             <div class="col-lg-6">
-<div class="alert alert-success d-inline-flex align-items-center px-4 py-2 mb-4">
 
-    <i class="bi bi-lightning-charge-fill ms-2"></i>
+                {% if hero.badge_text %}
+                    <div class="d-inline-flex align-items-center rounded-pill bg-primary-subtle text-primary px-3 py-2 mb-4">
+                        <i class="bi bi-lightning-charge-fill ms-2"></i>
+                        <span>{{ hero.badge_text }}</span>
+                    </div>
+                {% endif %}
 
-    بیش از ۵۰ خدمت آنلاین بدون مراجعه حضوری
-
-</div>
-                <span class="badge bg-primary px-3 py-2 mb-3">
-                    مرکز خدمات آنلاین
-                </span>
-
-                <h1 class="display-4 fw-bold mt-3 mb-4">
-
-                    کارهای اداری را آنلاین،
-                    <br>
-                    سریع و مطمئن انجام دهید.
-
+                <h1 class="display-4 fw-bold text-dark lh-base mb-4">
+                    {{ hero.title }}
                 </h1>
 
-                <p class="lead text-secondary mb-4">
-
-                    از ثبت‌نام و استعلام گرفته تا خدمات قضایی،
-                    بانکی، مالیاتی، بیمه و ده‌ها خدمت دیگر را
-                    بدون مراجعه حضوری انجام دهید.
-
+                <p class="lead text-secondary lh-lg mb-4">
+                    {{ hero.subtitle }}
                 </p>
 
-                {% include "includes/search-box.html" %}
+                <div class="d-flex flex-wrap gap-3">
+
+                    {% if hero.primary_button_text and hero.primary_button_url %}
+                        <a
+                            href="{{ hero.primary_button_url }}"
+                            class="btn btn-primary btn-lg"
+                        >
+                            {{ hero.primary_button_text }}
+                        </a>
+                    {% endif %}
+
+                    {% if hero.secondary_button_text and hero.secondary_button_url %}
+                        <a
+                            href="{{ hero.secondary_button_url }}"
+                            class="btn btn-outline-primary btn-lg"
+                        >
+                            {{ hero.secondary_button_text }}
+                        </a>
+                    {% endif %}
+
+                </div>
+
+                {% if trust_items %}
+                    <div class="row g-3 mt-4">
+
+                        {% for item in trust_items %}
+                            <div class="col-6">
+
+                                <div class="d-flex align-items-center">
+                                    <i class="bi {{ item.icon }} text-success fs-5 ms-2"></i>
+                                    <span class="small fw-medium">
+                                        {{ item.title }}
+                                    </span>
+                                </div>
+
+                            </div>
+                        {% endfor %}
+
+                    </div>
+                {% endif %}
 
             </div>
 
             <div class="col-lg-6 text-center">
 
-                <img
-                    src="https://placehold.co/600x500?text=CMAH"
-                    class="img-fluid"
-                    alt="CMAH">
+                {% if hero.image %}
+                    <img
+                        src="{{ hero.image.url }}"
+                        class="img-fluid rounded-4"
+                        alt="{{ hero.image_alt|default:hero.title }}"
+                        width="650"
+                        height="500"
+                        loading="eager"
+                        fetchpriority="high"
+                    >
+                {% endif %}
 
             </div>
 
         </div>
+    </div>
+</section>
+{% endif %}
+
+
+{% if home_settings %}
+<section class="pb-5">
+    <div class="container">
+
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body p-4 p-lg-5">
+
+                <h2 class="h4 fw-bold text-center mb-4">
+                    {{ home_settings.search_title }}
+                </h2>
+
+                <form
+                    action="{% url 'services:service_list' %}"
+                    method="get"
+                    role="search"
+                >
+                    <div class="input-group input-group-lg">
+
+                        <input
+                            type="search"
+                            name="q"
+                            class="form-control"
+                            placeholder="{{ home_settings.search_placeholder }}"
+                            aria-label="{{ home_settings.search_title }}"
+                        >
+
+                        <button
+                            type="submit"
+                            class="btn btn-primary px-4"
+                        >
+                            <i class="bi bi-search ms-1"></i>
+                            جستجو
+                        </button>
+
+                    </div>
+                </form>
+
+            </div>
+        </div>
 
     </div>
 </section>
-<!-- خدمات پرکاربرد -->
-<section class="py-5 bg-light">
+{% endif %}
 
+
+{% if featured_services %}
+<section class="py-5">
     <div class="container">
 
-        <h2 class="fw-bold mb-4">
-            خدمات پرکاربرد
-        </h2>
+        <div class="d-flex justify-content-between align-items-center gap-3 mb-4">
+
+            <h2 class="fw-bold mb-0">
+                {{ home_settings.featured_services_title }}
+            </h2>
+
+            <a
+                href="{% url 'services:service_list' %}"
+                class="btn btn-outline-primary"
+            >
+                {{ home_settings.featured_services_button_text }}
+            </a>
+
+        </div>
 
         <div class="row g-4">
 
-            {% for i in "123456" %}
+            {% for service in featured_services %}
+                <div class="col-12 col-sm-6 col-md-4 col-lg-3">
 
-            <div class="col-md-4 col-lg-2">
+                    <article class="card border-0 shadow-sm h-100 rounded-4">
+                        <div class="card-body d-flex flex-column text-center p-4">
 
-                <div class="card h-100 border-0 shadow-sm">
+                            {% if service.image %}
+                                <img
+                                    src="{{ service.image.url }}"
+                                    class="img-fluid rounded-3 mb-3"
+                                    alt="{{ service.title }}"
+                                    width="320"
+                                    height="220"
+                                    loading="lazy"
+                                >
+                            {% else %}
+                                <i class="bi {{ service.icon|default:'bi-file-earmark-text' }} display-5 text-primary"></i>
+                            {% endif %}
 
-                    <div class="card-body text-center">
+                            <h3 class="h5 mt-3">
+                                {{ service.title }}
+                            </h3>
 
-                        <i class="bi bi-file-earmark-text fs-1 text-primary"></i>
+                            {% if service.short_description %}
+                                <p class="small text-secondary flex-grow-1">
+                                    {{ service.short_description|truncatechars:120 }}
+                                </p>
+                            {% endif %}
 
-                        <h6 class="mt-3">
-                            ثبت نام ثنا
-                        </h6>
+                            <a
+                                href="{% url 'services:service_detail' service.slug %}"
+                                class="btn btn-primary mt-auto"
+                            >
+                                {{ service.button_text }}
+                            </a>
 
-                    </div>
+                        </div>
+                    </article>
 
                 </div>
-
-            </div>
-
             {% endfor %}
 
         </div>
 
     </div>
-
 </section>
+{% endif %}
 
-{% include "includes/footer.html" %}
+
+{% if process_steps %}
+<section id="how-it-works" class="py-5 bg-light">
+    <div class="container">
+
+        <h2 class="fw-bold text-center mb-5">
+            {{ home_settings.process_title }}
+        </h2>
+
+        <div class="row g-4 justify-content-center">
+
+            {% for step in process_steps %}
+                <div class="col-md-6 col-lg-4">
+
+                    <article class="card border-0 shadow-sm h-100 rounded-4">
+                        <div class="card-body text-center p-4">
+
+                            <div class="d-inline-flex justify-content-center align-items-center bg-primary text-white rounded-circle mb-4"
+                                 style="width: 64px; height: 64px;">
+
+                                {% if step.icon %}
+                                    <i class="bi {{ step.icon }} fs-3"></i>
+                                {% else %}
+                                    <span class="fs-4 fw-bold">
+                                        {{ forloop.counter }}
+                                    </span>
+                                {% endif %}
+
+                            </div>
+
+                            <h3 class="h5 fw-bold">
+                                {{ step.title }}
+                            </h3>
+
+                            {% if step.description %}
+                                <p class="text-secondary mb-0">
+                                    {{ step.description }}
+                                </p>
+                            {% endif %}
+
+                        </div>
+                    </article>
+
+                </div>
+            {% endfor %}
+
+        </div>
+
+    </div>
+</section>
+{% endif %}
+
+
+{% if statistics %}
+<section class="py-5">
+    <div class="container">
+
+        <div class="row text-center g-4">
+
+            {% for item in statistics %}
+                <div class="col-6 col-md-3">
+
+                    {% if item.icon %}
+                        <i class="bi {{ item.icon }} fs-2 text-primary d-block mb-2"></i>
+                    {% endif %}
+
+                    <p class="h2 fw-bold text-primary mb-2">
+                        {{ item.value }}
+                    </p>
+
+                    <p class="mb-0 text-secondary">
+                        {{ item.title }}
+                    </p>
+
+                </div>
+            {% endfor %}
+
+        </div>
+
+    </div>
+</section>
+{% endif %}
+
+
+{% if features %}
+<section class="py-5 bg-light">
+    <div class="container">
+
+        <h2 class="fw-bold text-center mb-5">
+            {{ home_settings.features_title }}
+        </h2>
+
+        <div class="row g-4">
+
+            {% for feature in features %}
+                <div class="col-md-6 col-lg-3">
+
+                    <article class="card border-0 shadow-sm h-100 rounded-4">
+                        <div class="card-body text-center p-4">
+
+                            <i class="bi {{ feature.icon|default:'bi-check-circle' }} display-5 text-primary"></i>
+
+                            <h3 class="h5 fw-bold mt-4">
+                                {{ feature.title }}
+                            </h3>
+
+                            <p class="text-secondary mb-0">
+                                {{ feature.description }}
+                            </p>
+
+                        </div>
+                    </article>
+
+                </div>
+            {% endfor %}
+
+        </div>
+
+    </div>
+</section>
+{% endif %}
+
+
+{% if home_settings %}
+<section class="py-5">
+    <div class="container">
+
+        <div class="bg-primary text-white rounded-4 p-4 p-md-5 text-center">
+
+            <h2 class="fw-bold">
+                {{ home_settings.cta_title }}
+            </h2>
+
+            <p class="lead mt-3 mb-0">
+                {{ home_settings.cta_description }}
+            </p>
+
+            <a
+                href="{% url 'services:service_list' %}"
+                class="btn btn-light btn-lg mt-4"
+            >
+                {{ home_settings.cta_button_text }}
+            </a>
+
+        </div>
+
+    </div>
+</section>
+{% endif %}
 
 {% endblock %}

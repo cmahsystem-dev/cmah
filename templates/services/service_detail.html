@@ -1,0 +1,327 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+{{ service.seo_title|default:service.title }}
+{% endblock %}
+
+{% block meta_description %}
+{{ service.seo_description|default:service.short_description }}
+{% endblock %}
+
+{% block canonical %}
+<link rel="canonical" href="{{ request.build_absolute_uri }}">
+{% endblock %}
+
+{% block content %}
+
+{% include "includes/header.html" %}
+
+<!-- ================= Breadcrumb ================= -->
+
+<section class="bg-light py-3 border-bottom">
+
+    <div class="container">
+
+        <nav aria-label="breadcrumb">
+
+            <ol class="breadcrumb mb-0">
+
+                <li class="breadcrumb-item">
+                    <a href="/">خانه</a>
+                </li>
+
+                <li class="breadcrumb-item">
+                    <a href="{% url 'services:service_list' %}">
+                        خدمات
+                    </a>
+                </li>
+
+                <li class="breadcrumb-item active">
+
+                    {{ service.title }}
+
+                </li>
+
+            </ol>
+
+        </nav>
+
+    </div>
+
+</section>
+
+<!-- ================= Hero ================= -->
+
+<section class="py-5">
+
+    <div class="container">
+
+        <div class="row g-5 align-items-center">
+
+            <div class="col-lg-7">
+
+                {% if service.category %}
+
+                <span class="badge bg-primary mb-3">
+
+                    {{ service.category.name }}
+
+                </span>
+
+                {% endif %}
+
+                <h1 class="fw-bold mb-4">
+
+                    {{ service.title }}
+
+                </h1>
+
+                <p class="lead text-secondary">
+
+                    {{ service.short_description }}
+
+                </p>
+
+                <div class="mt-4">
+
+                    <a href="#order"
+                       class="btn btn-primary btn-lg">
+
+                        ثبت درخواست
+
+                    </a>
+
+                </div>
+
+            </div>
+
+            <div class="col-lg-5 text-center">
+
+                {% if service.image %}
+
+                    <img src="{{ service.image.url }}"
+                         class="img-fluid rounded-4 shadow"
+                         alt="{{ service.title }}"
+                         loading="eager">
+
+                {% else %}
+
+                    <div class="bg-light rounded-4 p-5">
+
+                        <i class="bi bi-file-earmark-text display-1 text-primary"></i>
+
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+<!-- ================= Price Card ================= -->
+
+<section class="pb-5">
+
+    <div class="container">
+
+        <div class="card shadow border-0">
+
+            <div class="card-body p-4">
+
+                <div class="row text-center">
+
+                    <div class="col-md-3">
+
+                        <h6 class="text-secondary">
+
+                            هزینه دولتی
+
+                        </h6>
+
+                        <h4>
+
+                            {{ service.government_fee }}
+
+                        </h4>
+
+                    </div>
+
+                    <div class="col-md-3">
+
+                        <h6 class="text-secondary">
+
+                            کارمزد CMAH
+
+                        </h6>
+
+                        <h4>
+
+                            {{ service.service_fee }}
+
+                        </h4>
+
+                    </div>
+
+                    <div class="col-md-3">
+
+                        <h6 class="text-secondary">
+
+                            مبلغ قابل پرداخت
+
+                        </h6>
+
+                        <h3 class="text-primary">
+
+                            {{ service.total_price }}
+
+                        </h3>
+
+                    </div>
+
+                    <div class="col-md-3">
+
+                        <h6 class="text-secondary">
+
+                            کش بک
+
+                        </h6>
+
+                        <h4 class="text-success">
+
+                            {{ service.cashback_percent }}%
+
+                        </h4>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+<!-- ================= Description ================= -->
+
+<section class="pb-5">
+
+    <div class="container">
+
+        <h2 class="fw-bold mb-4">
+
+            توضیحات خدمت
+
+        </h2>
+
+        <div class="card border-0 shadow-sm">
+
+            <div class="card-body p-4">
+
+                {{ service.description|linebreaks }}
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+<!-- ================= Related Services ================= -->
+
+{% if related_services %}
+
+<section class="py-5 bg-light">
+
+    <div class="container">
+
+        <h2 class="fw-bold mb-4">
+
+            خدمات مرتبط
+
+        </h2>
+
+        <div class="row g-4">
+
+            {% for item in related_services %}
+
+            <div class="col-md-3">
+
+                <div class="card border-0 shadow-sm h-100">
+
+                    <div class="card-body text-center">
+
+                        <i class="bi bi-grid fs-1 text-primary"></i>
+
+                        <h5 class="mt-3">
+
+                            {{ item.title }}
+
+                        </h5>
+
+                        <a href="{% url 'services:service_detail' item.slug %}"
+                           class="btn btn-outline-primary btn-sm mt-3">
+
+                            مشاهده
+
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+</section>
+
+{% endif %}
+
+<!-- ================= CTA ================= -->
+
+<section id="order" class="py-5">
+
+    <div class="container">
+
+        <div class="bg-primary text-white rounded-4 p-5 text-center">
+
+            <h2 class="fw-bold">
+
+                آماده ثبت درخواست هستید؟
+
+            </h2>
+
+            <p class="mt-3">
+
+                ثبت درخواست این خدمت کمتر از چند دقیقه زمان می‌برد.
+
+            </p>
+
+            <a href="#"
+               class="btn btn-light btn-lg">
+
+                شروع ثبت درخواست
+
+            </a>
+
+        </div>
+
+    </div>
+
+</section>
+
+{% include "includes/footer.html" %}
+
+{% endblock %}

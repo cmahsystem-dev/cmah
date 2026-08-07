@@ -1,0 +1,55 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+
+<div class="container py-5">
+
+    <h1 class="mb-5 fw-bold">
+        خدمات آنلاین
+    </h1>
+
+    <div class="row g-4">
+
+        {% for service in services %}
+
+        <div class="col-md-6 col-lg-4">
+
+            <div class="card h-100 shadow-sm">
+
+                <div class="card-body">
+
+                    <h5 class="card-title">
+                        {{ service.title }}
+                    </h5>
+
+                    <p class="text-muted">
+                        {{ service.short_description }}
+                    </p>
+
+                    {% if service.category %}
+                        <span class="badge bg-primary">
+                            {{ service.category.name }}
+                        </span>
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+        {% empty %}
+
+        <div class="col-12">
+            <div class="alert alert-warning">
+                هنوز خدمتی ثبت نشده است.
+            </div>
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+</div>
+
+{% endblock %}

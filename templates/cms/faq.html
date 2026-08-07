@@ -1,0 +1,95 @@
+{% extends "layouts/base.html" %}
+
+
+{% block title %}
+سوالات متداول
+{% endblock %}
+
+
+
+{% block content %}
+
+<section class="container py-5">
+
+
+    <h1 class="mb-5">
+        سوالات متداول
+    </h1>
+
+
+
+    <div class="accordion" id="faqAccordion">
+
+
+        {% for faq in faqs %}
+
+        <div class="accordion-item">
+
+
+            <h2 class="accordion-header">
+
+                <button
+                    class="accordion-button {% if not forloop.first %}collapsed{% endif %}"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#faq{{ faq.id }}"
+                >
+
+                    {{ faq.question }}
+
+                </button>
+
+            </h2>
+
+
+
+            <div
+                id="faq{{ faq.id }}"
+                class="accordion-collapse collapse {% if forloop.first %}show{% endif %}"
+                data-bs-parent="#faqAccordion"
+            >
+
+                <div class="accordion-body">
+
+                    {{ faq.answer|safe }}
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+        {% endfor %}
+
+
+    </div>
+
+
+</section>
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+
+        {% for faq in faqs %}
+
+        {
+            "@type": "Question",
+            "name": "{{ faq.question|escapejs }}",
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "{{ faq.answer|striptags|escapejs }}"
+            }
+        }
+
+        {% if not forloop.last %},{% endif %}
+
+        {% endfor %}
+
+    ]
+}
+</script>
+
+{% endblock %}

@@ -2,9 +2,13 @@
 __pycache__/
 *.py[cod]
 *.pyo
+*$py.class
 
 # Virtual Environment
 .venv/
+venv/
+env/
+ENV/
 
 # Database
 db.sqlite3
@@ -12,17 +16,38 @@ db.sqlite3
 # Media
 media/
 
-# Static
+# Collected Static
 staticfiles/
-
-# VSCode
-.vscode/
 
 # Environment
 .env
+.env.*
+!.env.example
 
 # Logs
 *.log
+
+# IDE
+.vscode/
+.idea/
+
+# Testing & Cache
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Build
+build/
+dist/
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Node (Future)
+node_modules/
 
 # OS
 .DS_Store

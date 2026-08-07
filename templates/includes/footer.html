@@ -1,15 +1,151 @@
-<footer class="border-top py-5 mt-5">
+<footer class="site-footer bg-dark text-white mt-5">
 
-    <div class="container text-center">
+    <div class="container py-5">
 
-        <strong>CMAH</strong>
+        <div class="row g-4">
 
-        <p class="text-secondary mt-2">
 
-            مرکز خدمات آنلاین
+            <!-- About -->
 
-        </p>
+            <div class="col-lg-4">
+
+                <h5 class="fw-bold mb-3">
+                    {{ site.site_name }}
+                </h5>
+
+
+                {% if site.slogan %}
+
+                    <p class="text-white-50">
+                        {{ site.slogan }}
+                    </p>
+
+                {% endif %}
+
+
+                {% if site.site_description %}
+
+                    <p class="text-white-50 lh-lg">
+                        {{ site.site_description }}
+                    </p>
+
+                {% endif %}
+
+            </div>
+
+
+
+            <!-- Footer Menu -->
+
+            <div class="col-lg-4">
+
+                <h5 class="fw-bold mb-3">
+                    لینک‌های مهم
+                </h5>
+
+
+                {% if footer_menu %}
+
+                    <ul class="list-unstyled footer-links">
+
+                        {% for item in footer_menu.items.all %}
+
+                            {% if item.is_active %}
+
+                                <li class="mb-2">
+
+                                    <a
+                                        href="{{ item.url }}"
+                                        target="{{ item.target }}"
+                                    >
+                                        {{ item.title }}
+                                    </a>
+
+                                </li>
+
+                            {% endif %}
+
+                        {% endfor %}
+
+                    </ul>
+
+                {% endif %}
+
+            </div>
+
+
+
+            <!-- Contact -->
+
+            <div class="col-lg-4">
+
+                <h5 class="fw-bold mb-3">
+                    ارتباط با ما
+                </h5>
+
+
+                {% if site.phone %}
+
+                    <p class="text-white-50">
+                        <i class="bi bi-telephone ms-2"></i>
+                        {{ site.phone }}
+                    </p>
+
+                {% endif %}
+
+
+                {% if site.email %}
+
+                    <p class="text-white-50">
+                        <i class="bi bi-envelope ms-2"></i>
+                        {{ site.email }}
+                    </p>
+
+                {% endif %}
+
+
+                {% if site.address %}
+
+                    <p class="text-white-50">
+                        <i class="bi bi-geo-alt ms-2"></i>
+                        {{ site.address }}
+                    </p>
+
+                {% endif %}
+
+
+            </div>
+
+
+        </div>
 
     </div>
+
+
+
+    <div class="border-top border-secondary">
+
+        <div class="container py-3 text-center">
+
+
+            {% if site.copyright %}
+
+                <small class="text-white-50">
+                    {{ site.copyright }}
+                </small>
+
+            {% else %}
+
+                <small class="text-white-50">
+                    © {{ site.site_name }}
+                </small>
+
+            {% endif %}
+
+
+        </div>
+
+    </div>
+
 
 </footer>

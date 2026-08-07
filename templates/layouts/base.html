@@ -1,46 +1,286 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>{% block title %}CMAH | مرکز خدمات آنلاین{% endblock %}</title>
 
-    <meta name="description"
-        content="کارهای اداری را آنلاین، سریع و مطمئن انجام دهید. خدمات قضایی، بانکی، مالیاتی، بیمه، ثبت شرکت و ده‌ها خدمت دیگر بدون مراجعه حضوری.">
+    {% load static %}
 
-    <meta name="theme-color" content="#2563EB">
+<meta charset="UTF-8">
 
-    <!-- Bootstrap RTL -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+<meta
+    http-equiv="X-UA-Compatible"
+    content="IE=edge"
+>
 
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+<meta
+    name="format-detection"
+    content="telephone=no"
+>
 
-    <!-- Vazirmatn -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap"
-        rel="stylesheet">
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+>
 
-    <!-- CSS -->
-    <link rel="stylesheet" href="{% static 'css/base.css' %}">
-    {% block extra_css %}{% endblock %}
+
+<title>
+    {% block title %}
+        {{ site.seo_title|default:site.site_name|default:"CMAH | مرکز خدمات آنلاین" }}
+    {% endblock %}
+</title>
+
+
+<meta
+    name="description"
+    content="{% block meta_description %}{{ site.seo_description|default:'کارهای اداری را آنلاین، سریع و مطمئن انجام دهید.' }}{% endblock %}"
+>
+
+
+{% block seo %}
+
+<link
+    rel="canonical"
+    href="{{ request.build_absolute_uri }}"
+>
+
+
+<meta
+    property="og:type"
+    content="website"
+>
+
+
+<meta
+    property="og:title"
+    content="{{ site.seo_title|default:site.site_name }}"
+>
+
+
+<meta
+    property="og:description"
+    content="{{ site.seo_description }}"
+>
+
+
+{% if site.default_og_image %}
+
+<meta
+    property="og:image"
+    content="{{ request.scheme }}://{{ request.get_host }}{{ site.default_og_image.url }}"
+>
+
+{% endif %}
+
+
+<meta
+    name="twitter:card"
+    content="summary_large_image"
+>
+
+
+{% endblock %}
+
+
+
+<meta
+    name="author"
+    content="CMAH"
+>
+
+
+<meta
+    name="generator"
+    content="Django"
+>
+
+
+<meta
+    name="theme-color"
+    content="#2563EB"
+>
+
+
+<meta
+    name="robots"
+    content="index,follow"
+>
+
+
+
+{% if site.favicon %}
+
+<link
+    rel="icon"
+    href="{{ site.favicon.url }}"
+>
+
+{% else %}
+
+<link
+    rel="icon"
+    href="{% static 'images/favicon.ico' %}"
+>
+
+{% endif %}
+
+
+
+<!-- Bootstrap RTL -->
+
+<link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.rtl.min.css"
+    rel="stylesheet"
+>
+
+
+<!-- Bootstrap Icons -->
+
+<link
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+    rel="stylesheet"
+>
+
+
+<!-- Vazirmatn -->
+
+<link
+    rel="preconnect"
+    href="https://fonts.googleapis.com"
+>
+
+
+<link
+    rel="preconnect"
+    href="https://fonts.gstatic.com"
+    crossorigin
+>
+
+
+<link
+    href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet"
+>
+
+
+
+<!-- Main CSS -->
+
+<link
+    rel="stylesheet"
+    href="{% static 'css/style.css' %}"
+>
+
+
+
+{% block extra_css %}
+{% endblock %}
+
+{% block schema %}
+
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Organization",
+
+    "name": "{{ site.site_name }}",
+
+    "url": "{{ request.scheme }}://{{ request.get_host }}"
+
+    {% if site.logo %}
+    ,
+    "logo": "{{ request.scheme }}://{{ request.get_host }}{{ site.logo.url }}"
+    {% endif %}
+
+    {% if site.phone %}
+    ,
+    "telephone": "{{ site.phone }}"
+    {% endif %}
+
+    {% if site.email %}
+    ,
+    "email": "{{ site.email }}"
+    {% endif %}
+}
+</script>
+
+
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+
+    "name": "{{ site.site_name }}",
+
+    "url": "{{ request.scheme }}://{{ request.get_host }}"
+}
+</script>
+
+
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+
+    "@type": "LocalBusiness",
+
+    "name": "{{ site.site_name }}",
+
+    "url": "{{ request.scheme }}://{{ request.get_host }}"
+
+    {% if site.phone %}
+    ,
+    "telephone": "{{ site.phone }}"
+    {% endif %}
+
+    {% if site.email %}
+    ,
+    "email": "{{ site.email }}"
+    {% endif %}
+
+    {% if site.address %}
+    ,
+    "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "{{ site.address|escapejs }}"
+    }
+    {% endif %}
+
+    {% if site.logo %}
+    ,
+    "image": "{{ request.scheme }}://{{ request.get_host }}{{ site.logo.url }}"
+    {% endif %}
+
+}
+</script>
+
+{% endblock %}
+
+{% block extra_head %}
+{% endblock %}
+
 </head>
 
 <body>
 
-    {% block content %}
-    {% endblock %}
+    {% include "includes/header.html" %}
 
+    <main>
+
+        {% block content %}
+        {% endblock %}
+
+    </main>
+
+    {% include "includes/footer.html" %}
+
+    <!-- Bootstrap -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
 
+    <!-- Main JS -->
     <script src="{% static 'js/app.js' %}"></script>
 
-    {% block extra_js %}{% endblock %}
+    {% block extra_js %}
+    {% endblock %}
 
 </body>
 

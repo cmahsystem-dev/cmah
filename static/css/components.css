@@ -1,0 +1,91 @@
+.btn-primary{
+
+    background:var(--primary);
+
+    border:none;
+
+    border-radius:14px;
+
+    padding:.8rem 1.4rem;
+
+    transition:var(--transition);
+
+}
+
+.btn-primary:hover{
+
+    transform:translateY(-2px);
+
+    background:var(--primary-dark);
+
+}
+.service-card{
+
+    background:var(--surface);
+
+    border-radius:20px;
+
+    border:1px solid var(--border);
+
+    box-shadow:var(--shadow-sm);
+
+    transition:var(--transition);
+
+    overflow:hidden;
+
+}
+
+.service-card:hover{
+
+    transform:translateY(-6px);
+
+    box-shadow:var(--shadow-lg);
+
+}
+.badge-category{
+
+    background:#EEF2FF;
+
+    color:var(--primary);
+
+    padding:8px 14px;
+
+    border-radius:30px;
+
+}
+/* =========================
+   Sticky Header
+========================= */
+
+.site-header {
+    
+    z-index: 1030;
+    background: #fff;
+}
+
+
+/* Logo */
+
+.navbar-logo {
+    max-height: 45px;
+    width: auto;
+    object-fit: contain;
+}
+
+/* Footer */
+
+.site-footer {
+    line-height: 1.8;
+}
+
+
+.footer-links a {
+    color: rgba(255,255,255,.7);
+    text-decoration: none;
+    transition: .2s;
+}
+
+
+.footer-links a:hover {
+    color: #fff;
+}
