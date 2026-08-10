@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'core',
     'services',
     'cms',
+    'cases',
 
 
     "django_ckeditor_5",

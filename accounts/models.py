@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.core.validators import RegexValidator
 from django.db import models
+from django.conf import settings
 
 
 iran_mobile_validator = RegexValidator(
@@ -112,5 +113,60 @@ class OTPCode(models.Model):
             models.Index(fields=["expires_at"]),
         ]
 
+    
     def __str__(self):
         return f"{self.user.mobile} - {self.code}"
+
+class UserAttribute(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="attributes",
+        verbose_name="کاربر",
+    )
+
+    key = models.SlugField(
+        max_length=100,
+        verbose_name="کلید",
+    )
+
+    value = models.TextField(
+        blank=True,
+        verbose_name="مقدار",
+    )
+
+    is_verified = models.BooleanField(
+        default=False,
+        db_index=True,
+        verbose_name="تأیید شده",
+    )
+
+    verified_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="زمان تأیید",
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="زمان ایجاد",
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name="آخرین بروزرسانی",
+    )
+
+    class Meta:
+        ordering = ["key"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "key"],
+                name="unique_user_attribute",
+            )
+        ]
+        verbose_name = "اطلاعات کاربر"
+        verbose_name_plural = "اطلاعات کاربران"
+
+    def __str__(self):
+        return f"{self.user} - {self.key}"
