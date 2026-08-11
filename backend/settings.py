@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'services',
     'cms',
     'cases',
+    "payments",
 
 
     "django_ckeditor_5",
