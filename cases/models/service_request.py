@@ -20,6 +20,7 @@ class ServiceRequest(models.Model):
         UNDER_REVIEW = "under_review", "در حال بررسی"
         NEEDS_CORRECTION = "needs_correction", "نیازمند اصلاح"
         READY_FOR_PAYMENT = "ready_for_payment", "آماده پرداخت"
+        PAID = "paid", "پرداخت شده"
         PROCESSING = "processing", "در حال انجام"
         COMPLETED = "completed", "تکمیل شده"
         CANCELLED = "cancelled", "لغو شده"
@@ -30,27 +31,39 @@ class ServiceRequest(models.Model):
             Status.SUBMITTED,
             Status.CANCELLED,
         },
+
         Status.SUBMITTED: {
+            Status.READY_FOR_PAYMENT,
             Status.UNDER_REVIEW,
             Status.CANCELLED,
         },
+
+        Status.READY_FOR_PAYMENT: {
+            Status.PAID,
+            Status.CANCELLED,
+        },
+
+        Status.PAID: {
+            Status.UNDER_REVIEW,
+            Status.CANCELLED,
+        },
+
         Status.UNDER_REVIEW: {
             Status.NEEDS_CORRECTION,
-            Status.READY_FOR_PAYMENT,
+            Status.PROCESSING,
             Status.REJECTED,
         },
+
         Status.NEEDS_CORRECTION: {
             Status.SUBMITTED,
             Status.CANCELLED,
         },
-        Status.READY_FOR_PAYMENT: {
-            Status.PROCESSING,
-            Status.CANCELLED,
-        },
+
         Status.PROCESSING: {
             Status.COMPLETED,
             Status.CANCELLED,
         },
+
         Status.COMPLETED: set(),
         Status.CANCELLED: set(),
         Status.REJECTED: set(),

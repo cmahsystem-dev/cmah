@@ -18,6 +18,8 @@ from cases.services.request_submission_service import (
     RequestSubmissionService,
 )
 from services.models import Service, ServiceField
+from cases.services.request_routing_service import RequestRoutingService
+from payments.services.payment_service import PaymentService
 
 
 class ServiceRequestFlowTests(TestCase):
@@ -533,4 +535,113 @@ class ServiceRequestFlowTests(TestCase):
         self.assertEqual(
             self.request.status,
             ServiceRequest.Status.SUBMITTED,
+        )
+
+
+    def test_unpaid_request_routes_to_payment(self):
+        service_request = ServiceRequest.objects.create(
+            user=self.user,
+            service=self.service,
+            amount=250_000,
+        )
+
+        service_request.transition_to(
+            ServiceRequest.Status.SUBMITTED,
+            changed_by=self.user,
+        )
+
+        service_request = RequestRoutingService.route_submitted(
+            service_request=service_request,
+            changed_by=self.user,
+        )
+
+        self.assertEqual(
+            service_request.status,
+            ServiceRequest.Status.READY_FOR_PAYMENT,
+        )
+
+
+    def test_free_request_routes_directly_to_review(self):
+        service_request = ServiceRequest.objects.create(
+            user=self.user,
+            service=self.service,
+            amount=0,
+        )
+
+        service_request.transition_to(
+            ServiceRequest.Status.SUBMITTED,
+            changed_by=self.user,
+        )
+
+        service_request = RequestRoutingService.route_submitted(
+            service_request=service_request,
+            changed_by=self.user,
+        )
+
+        self.assertEqual(
+            service_request.status,
+            ServiceRequest.Status.UNDER_REVIEW,
+        )
+
+        self.assertFalse(
+            service_request.payments.exists()
+        )
+
+
+    def test_paid_corrected_request_routes_to_review_without_new_payment(self):
+        service_request = ServiceRequest.objects.create(
+            user=self.user,
+            service=self.service,
+            amount=250_000,
+        )
+
+        service_request.transition_to(
+            ServiceRequest.Status.SUBMITTED,
+            changed_by=self.user,
+        )
+
+        service_request = RequestRoutingService.route_submitted(
+            service_request=service_request,
+            changed_by=self.user,
+        )
+
+        payment = PaymentService.create_payment(
+            service_request=service_request,
+        )
+
+        PaymentService.mark_paid(
+            payment=payment,
+            reference_id="ROUTING-TEST-REF",
+        )
+
+        service_request.refresh_from_db()
+
+        service_request.transition_to(
+            ServiceRequest.Status.UNDER_REVIEW,
+            changed_by=self.user,
+        )
+
+        service_request.transition_to(
+            ServiceRequest.Status.NEEDS_CORRECTION,
+            changed_by=self.user,
+        )
+
+        service_request.transition_to(
+            ServiceRequest.Status.SUBMITTED,
+            changed_by=self.user,
+        )
+
+        service_request = RequestRoutingService.route_submitted(
+            service_request=service_request,
+            changed_by=self.user,
+        )
+
+        self.assertEqual(
+            service_request.status,
+            ServiceRequest.Status.UNDER_REVIEW,
+        )
+
+        self.assertEqual(
+            service_request.payments.count(),
+            1,
         )

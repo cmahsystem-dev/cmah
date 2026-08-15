@@ -6,6 +6,7 @@ from cases.models import ServiceRequest
 from payments.models import Payment
 from payments.services.payment_service import PaymentService
 from services.models import Service
+from cases.services.request_routing_service import RequestRoutingService
 
 
 class PaymentServiceTests(TestCase):
@@ -33,11 +34,6 @@ class PaymentServiceTests(TestCase):
 
         service_request.transition_to(
             ServiceRequest.Status.SUBMITTED,
-            changed_by=self.user,
-        )
-
-        service_request.transition_to(
-            ServiceRequest.Status.UNDER_REVIEW,
             changed_by=self.user,
         )
 
@@ -167,7 +163,7 @@ class PaymentServiceTests(TestCase):
 
         self.assertEqual(
             service_request.status,
-            ServiceRequest.Status.PROCESSING,
+            ServiceRequest.Status.PAID,
         )
 
     def test_mark_paid_requires_reference_id(self):
@@ -348,45 +344,6 @@ class PaymentServiceTests(TestCase):
             ).count(),
             2,
         )
-
-    # --------------------------------------------------
-    # FREE REQUEST
-    # --------------------------------------------------
-
-    def test_free_request_moves_to_processing_without_payment(self):
-        service_request = self._create_ready_request(
-            amount=0,
-        )
-
-        service_request = PaymentService.process_free_request(
-            service_request=service_request,
-            changed_by=self.user,
-        )
-
-        service_request.refresh_from_db()
-
-        self.assertEqual(
-            service_request.status,
-            ServiceRequest.Status.PROCESSING,
-        )
-
-        self.assertEqual(
-            Payment.objects.filter(
-                service_request=service_request,
-            ).count(),
-            0,
-        )
-
-    def test_paid_request_cannot_use_free_flow(self):
-        service_request = self._create_ready_request(
-            amount=250_000,
-        )
-
-        with self.assertRaises(ValidationError):
-            PaymentService.process_free_request(
-                service_request=service_request,
-                changed_by=self.user,
-            )
 
     # --------------------------------------------------
     # TIMELINE

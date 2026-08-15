@@ -86,6 +86,16 @@ class PaymentService:
         return payment
 
     @staticmethod
+    def is_request_paid(
+        *,
+        service_request: ServiceRequest,
+    ) -> bool:
+        return Payment.objects.filter(
+            service_request=service_request,
+            status=Payment.Status.PAID,
+        ).exists()
+
+    @staticmethod
     @transaction.atomic
     def mark_paid(
         *,
@@ -176,53 +186,12 @@ class PaymentService:
         )
 
         service_request.transition_to(
-            ServiceRequest.Status.PROCESSING,
+            ServiceRequest.Status.PAID,
             note="پرداخت با موفقیت تأیید شد.",
         )
 
         return payment
 
-    @staticmethod
-    @transaction.atomic
-    def process_free_request(
-        *,
-        service_request: ServiceRequest,
-        changed_by=None,
-    ) -> ServiceRequest:
-        service_request = (
-            ServiceRequest.objects
-            .select_for_update()
-            .get(pk=service_request.pk)
-        )
-
-        if service_request.status != ServiceRequest.Status.READY_FOR_PAYMENT:
-            raise ValidationError(
-                "درخواست در وضعیت فعلی قابل شروع نیست."
-            )
-
-        if service_request.amount != 0:
-            raise ValidationError(
-                "این درخواست رایگان نیست."
-            )
-
-        service_request.transition_to(
-            ServiceRequest.Status.PROCESSING,
-            changed_by=changed_by,
-            note="خدمت رایگان است و نیاز به پرداخت ندارد.",
-        )
-
-        RequestTimelineService.record(
-            service_request=service_request,
-            event_type="system",
-            title="درخواست بدون نیاز به پرداخت وارد مرحله انجام شد.",
-            actor=changed_by,
-            metadata={
-                "amount": 0,
-                "payment_required": False,
-            },
-        )
-
-        return service_request
 
     @staticmethod
     @transaction.atomic
