@@ -23,6 +23,8 @@ from payments.services.payment_service import PaymentService
 from cases.services.admin_request_service import AdminRequestService
 from django.core.exceptions import ValidationError
 
+from cases.services.user_request_service import UserRequestService
+from payments.models import Payment
 
 
 class ServiceRequestFlowTests(TestCase):
@@ -1203,4 +1205,225 @@ class ServiceRequestFlowTests(TestCase):
         self.assertEqual(
             document.rejection_reason,
             "",
+        )
+
+
+
+    def test_user_can_create_draft_with_service_total_price(self):
+        self.service.government_fee = 100_000
+        self.service.service_fee = 50_000
+        self.service.save(
+            update_fields=[
+                "government_fee",
+                "service_fee",
+            ]
+        )
+
+        service_request = UserRequestService.create_draft(
+            user=self.user,
+            service=self.service,
+        )
+
+        self.assertEqual(
+            service_request.status,
+            ServiceRequest.Status.DRAFT,
+        )
+
+        self.assertEqual(
+            service_request.amount,
+            150_000,
+        )
+
+        self.assertEqual(
+            service_request.user_id,
+            self.user.id,
+        )
+
+
+    def test_user_cannot_submit_another_users_request(self):
+        other_user = User.objects.create_user(
+            mobile="09123333333",
+        )
+
+        service_request = UserRequestService.create_draft(
+            user=self.user,
+            service=self.service,
+        )
+
+        with self.assertRaises(ValidationError):
+            UserRequestService.submit(
+                service_request=service_request,
+                user=other_user,
+            )
+
+        service_request.refresh_from_db()
+
+        self.assertEqual(
+            service_request.status,
+            ServiceRequest.Status.DRAFT,
+        )
+
+
+    def test_user_cannot_submit_request_from_invalid_status(self):
+        service_request = UserRequestService.create_draft(
+            user=self.user,
+            service=self.service,
+        )
+
+        service_request.transition_to(
+            ServiceRequest.Status.SUBMITTED,
+            changed_by=self.user,
+        )
+
+        service_request.transition_to(
+            ServiceRequest.Status.READY_FOR_PAYMENT,
+            changed_by=self.user,
+        )
+
+        with self.assertRaises(ValidationError):
+            UserRequestService.submit(
+                service_request=service_request,
+                user=self.user,
+            )
+
+        service_request.refresh_from_db()
+
+        self.assertEqual(
+            service_request.status,
+            ServiceRequest.Status.READY_FOR_PAYMENT,
+        )
+
+
+    def test_user_submit_paid_request_routes_to_ready_for_payment(self):
+        self.service.government_fee = 100_000
+        self.service.service_fee = 50_000
+        self.service.save(
+            update_fields=[
+                "government_fee",
+                "service_fee",
+            ]
+        )
+
+        service_request = UserRequestService.create_draft(
+            user=self.user,
+            service=self.service,
+        )
+
+        service_request = UserRequestService.submit(
+            service_request=service_request,
+            user=self.user,
+        )
+
+        self.assertEqual(
+            service_request.status,
+            ServiceRequest.Status.READY_FOR_PAYMENT,
+        )
+
+        self.assertEqual(
+            service_request.amount,
+            150_000,
+        )
+
+        self.assertIsNotNone(
+            service_request.submitted_at,
+        )
+
+
+    def test_user_submit_free_request_routes_to_under_review(self):
+        self.service.government_fee = 0
+        self.service.service_fee = 0
+        self.service.save(
+            update_fields=[
+                "government_fee",
+                "service_fee",
+            ]
+        )
+
+        service_request = UserRequestService.create_draft(
+            user=self.user,
+            service=self.service,
+        )
+
+        service_request = UserRequestService.submit(
+            service_request=service_request,
+            user=self.user,
+        )
+
+        self.assertEqual(
+            service_request.status,
+            ServiceRequest.Status.UNDER_REVIEW,
+        )
+
+        self.assertEqual(
+            service_request.amount,
+            0,
+        )
+
+        self.assertFalse(
+            service_request.payments.exists()
+        )
+
+
+    def test_paid_corrected_request_resubmits_without_second_payment(self):
+        self.service.government_fee = 100_000
+        self.service.service_fee = 50_000
+        self.service.save(
+            update_fields=[
+                "government_fee",
+                "service_fee",
+            ]
+        )
+
+        service_request = UserRequestService.create_draft(
+            user=self.user,
+            service=self.service,
+        )
+
+        service_request = UserRequestService.submit(
+            service_request=service_request,
+            user=self.user,
+        )
+
+        payment = PaymentService.create_payment(
+            service_request=service_request,
+        )
+
+        PaymentService.mark_paid(
+            payment=payment,
+            reference_id="USER-RESUBMIT-001",
+        )
+
+        service_request.refresh_from_db()
+
+        service_request = AdminRequestService.start_review(
+            service_request=service_request,
+            changed_by=self.user,
+        )
+
+        service_request = AdminRequestService.request_correction(
+            service_request=service_request,
+            changed_by=self.user,
+            note="نیاز به اصلاح اطلاعات.",
+        )
+
+        service_request = UserRequestService.submit(
+            service_request=service_request,
+            user=self.user,
+        )
+
+        self.assertEqual(
+            service_request.status,
+            ServiceRequest.Status.UNDER_REVIEW,
+        )
+
+        self.assertEqual(
+            service_request.payments.filter(
+                status=Payment.Status.PAID,
+            ).count(),
+            1,
+        )
+
+        self.assertEqual(
+            service_request.payments.count(),
+            1,
         )
