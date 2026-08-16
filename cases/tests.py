@@ -1427,3 +1427,66 @@ class ServiceRequestFlowTests(TestCase):
             service_request.payments.count(),
             1,
         )
+
+
+
+    def test_user_get_form_request_data_overrides_reusable_prefill(self):
+        service_request = UserRequestService.create_draft(
+            user=self.user,
+            service=self.service,
+        )
+
+        service_request.request_data = {
+            "national_code": "0011111111",
+            "age": 40,
+            "gender": "female",
+            "birth_date": "1995-01-10",
+        }
+        service_request.save(
+            update_fields=[
+                "request_data",
+                "updated_at",
+            ]
+        )
+
+        form_context = UserRequestService.get_form(
+            service_request=service_request,
+            user=self.user,
+        )
+
+        self.assertEqual(
+            form_context["data"]["national_code"],
+            "0011111111",
+        )
+
+        self.assertEqual(
+            form_context["data"]["age"],
+            40,
+        )
+
+        self.assertEqual(
+            form_context["data"]["gender"],
+            "female",
+        )
+
+        self.assertEqual(
+            form_context["data"]["birth_date"],
+            "1995-01-10",
+        )
+
+
+    def test_user_cannot_get_form_for_another_users_request(self):
+        other_user = User.objects.create_user(
+            mobile="09124444444",
+        )
+
+        service_request = UserRequestService.create_draft(
+            user=self.user,
+            service=self.service,
+        )
+
+        with self.assertRaises(ValidationError):
+            UserRequestService.get_form(
+                service_request=service_request,
+                user=other_user,
+            )

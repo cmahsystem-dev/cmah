@@ -123,3 +123,26 @@ class UserRequestService:
             service_request=service_request,
             changed_by=user,
         )
+
+    @staticmethod
+    def get_form(
+        *,
+        service_request: ServiceRequest,
+        user,
+    ) -> dict:
+        UserRequestService.ensure_owner(
+            service_request=service_request,
+            user=user,
+        )
+
+        UserRequestService.ensure_status(
+            service_request=service_request,
+            allowed_statuses={
+                ServiceRequest.Status.DRAFT,
+                ServiceRequest.Status.NEEDS_CORRECTION,
+            },
+        )
+
+        return RequestFormService.get_form(
+            service_request=service_request,
+        )
