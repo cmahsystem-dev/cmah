@@ -67,6 +67,7 @@ class RequestDocumentService:
     @transaction.atomic
     def approve(
         document: RequestDocument,
+        reviewed_by=None,
     ) -> RequestDocument:
         document = (
             RequestDocument.objects
@@ -93,7 +94,7 @@ class RequestDocumentService:
             service_request=document.service_request,
             event_type="document_approved",
             title="مدرک تأیید شد.",
-            actor=None,
+            actor=reviewed_by,
             metadata={
                 "document_id": document.pk,
                 "field_key": document.field_key,
@@ -107,6 +108,7 @@ class RequestDocumentService:
     def reject(
         document: RequestDocument,
         reason: str,
+        reviewed_by=None,
     ) -> RequestDocument:
         reason = reason.strip()
 
@@ -141,7 +143,7 @@ class RequestDocumentService:
             event_type="document_rejected",
             title="مدرک رد شد.",
             description=reason,
-            actor=None,
+            actor=reviewed_by,
             metadata={
                 "document_id": document.pk,
                 "field_key": document.field_key,

@@ -20,6 +20,9 @@ from cases.services.request_submission_service import (
 from services.models import Service, ServiceField
 from cases.services.request_routing_service import RequestRoutingService
 from payments.services.payment_service import PaymentService
+from cases.services.admin_request_service import AdminRequestService
+from django.core.exceptions import ValidationError
+
 
 
 class ServiceRequestFlowTests(TestCase):
@@ -644,4 +647,560 @@ class ServiceRequestFlowTests(TestCase):
         self.assertEqual(
             service_request.payments.count(),
             1,
+        )
+
+    def test_admin_can_start_review_for_paid_request(self):
+        service_request = ServiceRequest.objects.create(
+            user=self.user,
+            service=self.service,
+            amount=250_000,
+        )
+
+        service_request.transition_to(
+            ServiceRequest.Status.SUBMITTED,
+            changed_by=self.user,
+        )
+
+        service_request = RequestRoutingService.route_submitted(
+            service_request=service_request,
+            changed_by=self.user,
+        )
+
+        payment = PaymentService.create_payment(
+            service_request=service_request,
+        )
+
+        PaymentService.mark_paid(
+            payment=payment,
+            reference_id="ADMIN-REVIEW-TEST-001",
+        )
+
+        service_request.refresh_from_db()
+
+        service_request = AdminRequestService.start_review(
+            service_request=service_request,
+            changed_by=self.user,
+        )
+
+        self.assertEqual(
+            service_request.status,
+            ServiceRequest.Status.UNDER_REVIEW,
+        )
+
+
+    def test_admin_cannot_start_review_for_unpaid_request(self):
+        service_request = ServiceRequest.objects.create(
+            user=self.user,
+            service=self.service,
+            amount=250_000,
+        )
+
+        service_request.transition_to(
+            ServiceRequest.Status.SUBMITTED,
+            changed_by=self.user,
+        )
+
+        with self.assertRaises(ValidationError):
+            AdminRequestService.start_review(
+                service_request=service_request,
+                changed_by=self.user,
+            )
+
+        service_request.refresh_from_db()
+
+        self.assertEqual(
+            service_request.status,
+            ServiceRequest.Status.SUBMITTED,
+        )
+
+
+    def test_admin_can_request_correction_with_note(self):
+        service_request = ServiceRequest.objects.create(
+            user=self.user,
+            service=self.service,
+            amount=0,
+        )
+
+        service_request.transition_to(
+            ServiceRequest.Status.SUBMITTED,
+            changed_by=self.user,
+        )
+
+        service_request = AdminRequestService.start_review(
+            service_request=service_request,
+            changed_by=self.user,
+        )
+
+        service_request = AdminRequestService.request_correction(
+            service_request=service_request,
+            changed_by=self.user,
+            note="تصویر مدرک خوانا نیست.",
+        )
+
+        self.assertEqual(
+            service_request.status,
+            ServiceRequest.Status.NEEDS_CORRECTION,
+        )
+
+    def test_admin_cannot_request_correction_without_note(self):
+        service_request = ServiceRequest.objects.create(
+            user=self.user,
+            service=self.service,
+            amount=0,
+        )
+
+        service_request.transition_to(
+            ServiceRequest.Status.SUBMITTED,
+            changed_by=self.user,
+        )
+
+        service_request = AdminRequestService.start_review(
+            service_request=service_request,
+            changed_by=self.user,
+        )
+
+        with self.assertRaises(ValidationError):
+            AdminRequestService.request_correction(
+                service_request=service_request,
+                changed_by=self.user,
+                note="",
+            )
+
+        service_request.refresh_from_db()
+
+        self.assertEqual(
+            service_request.status,
+            ServiceRequest.Status.UNDER_REVIEW,
+        )
+
+    def test_admin_cannot_start_processing_with_unapproved_required_documents(self):
+        service_request = ServiceRequest.objects.create(
+            user=self.user,
+            service=self.service,
+            amount=0,
+        )
+
+        service_request.transition_to(
+            ServiceRequest.Status.SUBMITTED,
+            changed_by=self.user,
+        )
+
+        service_request = AdminRequestService.start_review(
+            service_request=service_request,
+            changed_by=self.user,
+        )
+
+        with self.assertRaises(ValidationError):
+            AdminRequestService.start_processing(
+                service_request=service_request,
+                changed_by=self.user,
+            )
+
+        service_request.refresh_from_db()
+
+        self.assertEqual(
+            service_request.status,
+            ServiceRequest.Status.UNDER_REVIEW,
+        )
+
+        self.assertIsNone(
+            service_request.started_at,
+        )
+
+
+    def test_admin_can_start_processing_when_required_documents_are_approved(self):
+        service_request = ServiceRequest.objects.create(
+            user=self.user,
+            service=self.service,
+            amount=0,
+        )
+
+        service_request.transition_to(
+            ServiceRequest.Status.SUBMITTED,
+            changed_by=self.user,
+        )
+
+        service_request = AdminRequestService.start_review(
+            service_request=service_request,
+            changed_by=self.user,
+        )
+
+        required_file_fields = ServiceField.objects.filter(
+            service=self.service,
+            is_active=True,
+            required=True,
+            field_type=ServiceField.FieldType.FILE,
+        )
+
+        for field in required_file_fields:
+            document = RequestDocument.objects.create(
+                service_request=service_request,
+                field_key=field.key,
+                file=f"test/{field.key}.jpg",
+                version=1,
+                status=RequestDocument.Status.PENDING,
+                uploaded_by=self.user,
+            )
+
+            AdminRequestService.approve_document(
+                document=document,
+                changed_by=self.user,
+            )
+
+        service_request = AdminRequestService.start_processing(
+            service_request=service_request,
+            changed_by=self.user,
+        )
+
+        self.assertEqual(
+            service_request.status,
+            ServiceRequest.Status.PROCESSING,
+        )
+
+        self.assertIsNotNone(
+            service_request.started_at,
+        )
+
+
+    def test_admin_can_complete_processing_request(self):
+        service_request = ServiceRequest.objects.create(
+            user=self.user,
+            service=self.service,
+            amount=0,
+        )
+
+        service_request.transition_to(
+            ServiceRequest.Status.SUBMITTED,
+            changed_by=self.user,
+        )
+
+        service_request = AdminRequestService.start_review(
+            service_request=service_request,
+            changed_by=self.user,
+        )
+
+        required_file_fields = ServiceField.objects.filter(
+            service=self.service,
+            is_active=True,
+            required=True,
+            field_type=ServiceField.FieldType.FILE,
+        )
+
+        for field in required_file_fields:
+            document = RequestDocument.objects.create(
+                service_request=service_request,
+                field_key=field.key,
+                file=f"test/{field.key}.jpg",
+                version=1,
+                status=RequestDocument.Status.PENDING,
+                uploaded_by=self.user,
+            )
+
+            AdminRequestService.approve_document(
+                document=document,
+                changed_by=self.user,
+            )
+
+        service_request = AdminRequestService.start_processing(
+            service_request=service_request,
+            changed_by=self.user,
+        )
+
+        service_request = AdminRequestService.complete(
+            service_request=service_request,
+            changed_by=self.user,
+            note="خدمت با موفقیت تکمیل شد.",
+        )
+
+        self.assertEqual(
+            service_request.status,
+            ServiceRequest.Status.COMPLETED,
+        )
+
+        self.assertIsNotNone(
+            service_request.completed_at,
+        )
+
+
+    def test_admin_can_reject_request_with_note(self):
+        service_request = ServiceRequest.objects.create(
+            user=self.user,
+            service=self.service,
+            amount=0,
+        )
+
+        service_request.transition_to(
+            ServiceRequest.Status.SUBMITTED,
+            changed_by=self.user,
+        )
+
+        service_request = AdminRequestService.start_review(
+            service_request=service_request,
+            changed_by=self.user,
+        )
+
+        service_request = AdminRequestService.reject_request(
+            service_request=service_request,
+            changed_by=self.user,
+            note="درخواست طبق شرایط این خدمت قابل انجام نیست.",
+        )
+
+        self.assertEqual(
+            service_request.status,
+            ServiceRequest.Status.REJECTED,
+        )
+
+
+    def test_admin_cannot_reject_request_without_note(self):
+        service_request = ServiceRequest.objects.create(
+            user=self.user,
+            service=self.service,
+            amount=0,
+        )
+
+        service_request.transition_to(
+            ServiceRequest.Status.SUBMITTED,
+            changed_by=self.user,
+        )
+
+        service_request = AdminRequestService.start_review(
+            service_request=service_request,
+            changed_by=self.user,
+        )
+
+        with self.assertRaises(ValidationError):
+            AdminRequestService.reject_request(
+                service_request=service_request,
+                changed_by=self.user,
+                note="",
+            )
+
+        service_request.refresh_from_db()
+
+        self.assertEqual(
+            service_request.status,
+            ServiceRequest.Status.UNDER_REVIEW,
+        )
+
+
+    def test_admin_can_approve_document_and_actor_is_recorded(self):
+        service_request = ServiceRequest.objects.create(
+            user=self.user,
+            service=self.service,
+            amount=0,
+        )
+
+        service_request.transition_to(
+            ServiceRequest.Status.SUBMITTED,
+            changed_by=self.user,
+        )
+
+        service_request = AdminRequestService.start_review(
+            service_request=service_request,
+            changed_by=self.user,
+        )
+
+        document = RequestDocument.objects.create(
+            service_request=service_request,
+            field_key="audit_test_document",
+            file="test/audit-test.jpg",
+            version=1,
+            status=RequestDocument.Status.PENDING,
+            uploaded_by=self.user,
+        )
+
+        document = AdminRequestService.approve_document(
+            document=document,
+            changed_by=self.user,
+        )
+
+        document.refresh_from_db()
+
+        self.assertEqual(
+            document.status,
+            RequestDocument.Status.APPROVED,
+        )
+
+        timeline_item = service_request.timeline.filter(
+            event_type="document_approved",
+            metadata__document_id=document.id,
+        ).order_by("-created_at").first()
+
+        self.assertIsNotNone(
+            timeline_item,
+        )
+
+        self.assertEqual(
+            timeline_item.actor_id,
+            self.user.id,
+        )
+
+
+    def test_admin_can_reject_document_and_actor_is_recorded(self):
+        service_request = ServiceRequest.objects.create(
+            user=self.user,
+            service=self.service,
+            amount=0,
+        )
+
+        service_request.transition_to(
+            ServiceRequest.Status.SUBMITTED,
+            changed_by=self.user,
+        )
+
+        service_request = AdminRequestService.start_review(
+            service_request=service_request,
+            changed_by=self.user,
+        )
+
+        document = RequestDocument.objects.create(
+            service_request=service_request,
+            field_key="audit_reject_document",
+            file="test/audit-reject.jpg",
+            version=1,
+            status=RequestDocument.Status.PENDING,
+            uploaded_by=self.user,
+        )
+
+        document = AdminRequestService.reject_document(
+            document=document,
+            changed_by=self.user,
+            reason="تصویر مدرک خوانا نیست.",
+        )
+
+        document.refresh_from_db()
+
+        self.assertEqual(
+            document.status,
+            RequestDocument.Status.REJECTED,
+        )
+
+        self.assertEqual(
+            document.rejection_reason,
+            "تصویر مدرک خوانا نیست.",
+        )
+
+        timeline_item = service_request.timeline.filter(
+            event_type="document_rejected",
+            metadata__document_id=document.id,
+        ).order_by("-created_at").first()
+
+        self.assertIsNotNone(
+            timeline_item,
+        )
+
+        self.assertEqual(
+            timeline_item.actor_id,
+            self.user.id,
+        )
+
+
+    def test_admin_cannot_approve_document_outside_review(self):
+        service_request = ServiceRequest.objects.create(
+            user=self.user,
+            service=self.service,
+            amount=0,
+        )
+
+        document = RequestDocument.objects.create(
+            service_request=service_request,
+            field_key="test_document",
+            file="test/document.jpg",
+            version=1,
+            status=RequestDocument.Status.PENDING,
+            uploaded_by=self.user,
+        )
+
+        with self.assertRaises(ValidationError):
+            AdminRequestService.approve_document(
+                document=document,
+                changed_by=self.user,
+            )
+
+        document.refresh_from_db()
+
+        self.assertEqual(
+            document.status,
+            RequestDocument.Status.PENDING,
+        )
+
+
+    def test_admin_cannot_reject_document_outside_review(self):
+        service_request = ServiceRequest.objects.create(
+            user=self.user,
+            service=self.service,
+            amount=0,
+        )
+
+        document = RequestDocument.objects.create(
+            service_request=service_request,
+            field_key="test_document",
+            file="test/document.jpg",
+            version=1,
+            status=RequestDocument.Status.PENDING,
+            uploaded_by=self.user,
+        )
+
+        with self.assertRaises(ValidationError):
+            AdminRequestService.reject_document(
+                document=document,
+                changed_by=self.user,
+                reason="مدرک قابل قبول نیست.",
+            )
+
+        document.refresh_from_db()
+
+        self.assertEqual(
+            document.status,
+            RequestDocument.Status.PENDING,
+        )
+
+        self.assertEqual(
+            document.rejection_reason,
+            "",
+        )
+
+    def test_admin_cannot_reject_document_without_reason(self):
+        service_request = ServiceRequest.objects.create(
+            user=self.user,
+            service=self.service,
+            amount=0,
+        )
+
+        service_request.transition_to(
+            ServiceRequest.Status.SUBMITTED,
+            changed_by=self.user,
+        )
+
+        service_request = AdminRequestService.start_review(
+            service_request=service_request,
+            changed_by=self.user,
+        )
+
+        document = RequestDocument.objects.create(
+            service_request=service_request,
+            field_key="test_document",
+            file="test/document.jpg",
+            version=1,
+            status=RequestDocument.Status.PENDING,
+            uploaded_by=self.user,
+        )
+
+        with self.assertRaises(ValidationError):
+            AdminRequestService.reject_document(
+                document=document,
+                changed_by=self.user,
+                reason="",
+            )
+
+        document.refresh_from_db()
+
+        self.assertEqual(
+            document.status,
+            RequestDocument.Status.PENDING,
+        )
+
+        self.assertEqual(
+            document.rejection_reason,
+            "",
         )
