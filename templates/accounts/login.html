@@ -1,0 +1,188 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+ورود | {{ site.site_name|default:"CMAH" }}
+{% endblock %}
+
+{% block meta_description %}
+ورود به حساب کاربری CMAH با شماره موبایل و دریافت کد تأیید.
+{% endblock %}
+
+
+{% block content %}
+
+<section class="py-5">
+    <div class="container">
+
+        <div class="row justify-content-center">
+            <div class="col-12 col-sm-10 col-md-8 col-lg-5 col-xl-4">
+
+                <div class="card border-0 shadow-sm rounded-4">
+
+                    <div class="card-body p-4 p-md-5">
+
+                        <div class="text-center mb-4">
+
+                            <h1 class="h4 fw-bold mb-2">
+                                ورود به حساب کاربری
+                            </h1>
+
+                            <p class="text-muted small mb-0">
+                                برای ورود، شماره موبایل خود را وارد کنید.
+                            </p>
+
+                        </div>
+
+
+                        {# Django messages #}
+                        {% if messages %}
+                            <div class="mb-4">
+
+                                {% for message in messages %}
+
+                                    <div
+                                        class="alert
+                                        {% if message.tags == 'error' %}
+                                            alert-danger
+                                        {% elif message.tags == 'success' %}
+                                            alert-success
+                                        {% elif message.tags == 'warning' %}
+                                            alert-warning
+                                        {% else %}
+                                            alert-info
+                                        {% endif %}
+                                        alert-dismissible fade show"
+                                        role="alert"
+                                    >
+
+                                        {{ message }}
+
+                                        <button
+                                            type="button"
+                                            class="btn-close"
+                                            data-bs-dismiss="alert"
+                                            aria-label="بستن"
+                                        ></button>
+
+                                    </div>
+
+                                {% endfor %}
+
+                            </div>
+                        {% endif %}
+
+
+                        {# Non-field errors #}
+                        {% if form.non_field_errors %}
+
+                            <div
+                                class="alert alert-danger"
+                                role="alert"
+                            >
+
+                                {% for error in form.non_field_errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+
+                            </div>
+
+                        {% endif %}
+
+
+                        <form
+                            method="post"
+                            action=""
+                            novalidate
+                        >
+
+                            {% csrf_token %}
+
+
+                            <div class="mb-4">
+
+                                <label
+                                    for="{{ form.mobile.id_for_label }}"
+                                    class="form-label fw-semibold"
+                                >
+                                    {{ form.mobile.label }}
+                                </label>
+
+
+                                <input
+                                    type="text"
+                                    name="{{ form.mobile.html_name }}"
+                                    id="{{ form.mobile.id_for_label }}"
+                                    class="form-control form-control-lg{% if form.mobile.errors %} is-invalid{% endif %}"
+                                    value="{{ form.mobile.value|default_if_none:'' }}"
+                                    placeholder="09123456789"
+                                    autocomplete="tel"
+                                    inputmode="numeric"
+                                    dir="ltr"
+                                    maxlength="20"
+                                    autofocus
+                                    required
+                                    aria-describedby="mobileHelp{% if form.mobile.errors %} mobileError{% endif %}"
+                                >
+
+
+                                {% if form.mobile.errors %}
+
+                                    <div
+                                        id="mobileError"
+                                        class="invalid-feedback"
+                                    >
+
+                                        {% for error in form.mobile.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+
+                                    </div>
+
+                                {% endif %}
+
+
+                                <div
+                                    id="mobileHelp"
+                                    class="form-text"
+                                >
+                                    شماره موبایل را با فرمت
+                                    <span dir="ltr">09123456789</span>
+                                    وارد کنید.
+                                </div>
+
+                            </div>
+
+
+                            <div class="d-grid">
+
+                                <button
+                                    type="submit"
+                                    class="btn btn-primary btn-lg"
+                                >
+                                    دریافت کد تأیید
+                                </button>
+
+                            </div>
+
+                        </form>
+
+
+                        <div class="text-center mt-4">
+
+                            <p class="text-muted small mb-0">
+                                با ادامه فرایند، کد تأیید به شماره موبایل شما ارسال می‌شود.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</section>
+
+{% endblock %}

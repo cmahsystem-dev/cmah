@@ -38,6 +38,10 @@ ALLOWED_HOSTS = [
 ]
 
 
+IPPANEL_API_KEY = os.environ.get("IPPANEL_API_KEY", "")
+IPPANEL_PATTERN_CODE = os.environ.get("IPPANEL_PATTERN_CODE", "")
+IPPANEL_SENDER = os.environ.get("IPPANEL_SENDER", "")
+
 # Application definition
 
 INSTALLED_APPS = [

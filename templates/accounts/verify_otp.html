@@ -1,0 +1,182 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+تأیید کد ورود | {{ site.site_name|default:"CMAH" }}
+{% endblock %}
+
+{% block meta_description %}
+تأیید کد یکبار مصرف برای ورود به حساب کاربری CMAH.
+{% endblock %}
+
+{% block content %}
+
+<section class="py-5">
+    <div class="container">
+
+        <div class="row justify-content-center">
+            <div class="col-12 col-sm-10 col-md-8 col-lg-5 col-xl-4">
+
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-body p-4 p-md-5">
+
+                        <div class="text-center mb-4">
+
+                            <h1 class="h4 fw-bold mb-2">
+                                تأیید شماره موبایل
+                            </h1>
+
+                            <p class="text-muted small mb-1">
+                                کد تأیید ارسال‌شده را وارد کنید.
+                            </p>
+
+                            {% if mobile %}
+                                <div
+                                    class="fw-semibold"
+                                    dir="ltr"
+                                >
+                                    {{ mobile }}
+                                </div>
+                            {% endif %}
+
+                        </div>
+
+
+                        {% if messages %}
+                            <div class="mb-4">
+
+                                {% for message in messages %}
+
+                                    <div
+                                        class="alert
+                                        {% if message.tags == 'error' %}
+                                            alert-danger
+                                        {% elif message.tags == 'success' %}
+                                            alert-success
+                                        {% elif message.tags == 'warning' %}
+                                            alert-warning
+                                        {% else %}
+                                            alert-info
+                                        {% endif %}
+                                        alert-dismissible fade show"
+                                        role="alert"
+                                    >
+
+                                        {{ message }}
+
+                                        <button
+                                            type="button"
+                                            class="btn-close"
+                                            data-bs-dismiss="alert"
+                                            aria-label="بستن"
+                                        ></button>
+
+                                    </div>
+
+                                {% endfor %}
+
+                            </div>
+                        {% endif %}
+
+
+                        {% if form.non_field_errors %}
+
+                            <div
+                                class="alert alert-danger"
+                                role="alert"
+                            >
+
+                                {% for error in form.non_field_errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+
+                            </div>
+
+                        {% endif %}
+
+
+                        <form
+                            method="post"
+                            action=""
+                            novalidate
+                        >
+
+                            {% csrf_token %}
+
+                            <div class="mb-4">
+
+                                <label
+                                    for="{{ form.code.id_for_label }}"
+                                    class="form-label fw-semibold"
+                                >
+                                    {{ form.code.label }}
+                                </label>
+
+                                <input
+                                    type="text"
+                                    name="{{ form.code.html_name }}"
+                                    id="{{ form.code.id_for_label }}"
+                                    class="form-control form-control-lg text-center{% if form.code.errors %} is-invalid{% endif %}"
+                                    value="{{ form.code.value|default_if_none:'' }}"
+                                    placeholder="123456"
+                                    autocomplete="one-time-code"
+                                    inputmode="numeric"
+                                    maxlength="6"
+                                    dir="ltr"
+                                    autofocus
+                                    required
+                                    aria-describedby="{% if form.code.errors %}codeError{% endif %}"
+                                >
+
+                                {% if form.code.errors %}
+
+                                    <div
+                                        id="codeError"
+                                        class="invalid-feedback"
+                                    >
+
+                                        {% for error in form.code.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+
+                                    </div>
+
+                                {% endif %}
+
+                            </div>
+
+
+                            <div class="d-grid mb-3">
+
+                                <button
+                                    type="submit"
+                                    class="btn btn-primary btn-lg"
+                                >
+                                    تأیید و ورود
+                                </button>
+
+                            </div>
+
+                        </form>
+
+
+                        <div class="text-center">
+
+                            <a
+                                href="{% url 'accounts:login' %}"
+                                class="small text-decoration-none"
+                            >
+                                تغییر شماره موبایل
+                            </a>
+
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</section>
+
+{% endblock %}

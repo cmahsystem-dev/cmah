@@ -1,6 +1,7 @@
 import logging
 
 from django.conf import settings
+from ippanel import Client
 
 
 logger = logging.getLogger(__name__)
@@ -14,34 +15,16 @@ class SMSServiceError(Exception):
 class SMSService:
     @staticmethod
     def send_otp(mobile: str, code: str) -> bool:
-        """
-        Send an OTP code to the given mobile number.
-
-        In development mode, if no SMS provider is configured,
-        the OTP is logged to the console instead of being sent.
-        """
-
         if not mobile:
             raise ValueError("Mobile number is required.")
 
         if not code:
             raise ValueError("OTP code is required.")
 
-        message = SMSService.build_otp_message(code)
-
-        if settings.DEBUG:
-            logger.info(
-                "Development OTP | mobile=%s | code=%s",
-                mobile,
-                code,
-            )
-            print(f"[SMS DEBUG] {mobile} -> {message}")
-            return True
-
         try:
             return SMSService._send_with_provider(
                 mobile=mobile,
-                message=message,
+                code=code,
             )
 
         except Exception as exc:
@@ -55,25 +38,58 @@ class SMSService:
             ) from exc
 
     @staticmethod
-    def build_otp_message(code: str) -> str:
-        return (
-            f"کد ورود شما به سی ماه:\n"
-            f"{code}\n"
-            f"این کد را در اختیار دیگران قرار ندهید."
-        )
+    def _normalize_recipient(mobile: str) -> str:
+        mobile = mobile.strip()
+
+        if mobile.startswith("09"):
+            return "98" + mobile[1:]
+
+        if mobile.startswith("+98"):
+            return mobile[1:]
+
+        if mobile.startswith("98"):
+            return mobile
+
+        return mobile
 
     @staticmethod
     def _send_with_provider(
         mobile: str,
-        message: str,
+        code: str,
     ) -> bool:
-        """
-        Production SMS provider integration.
+        if not settings.IPPANEL_API_KEY:
+            raise SMSServiceError(
+                "IPPANEL_API_KEY is not configured."
+            )
 
-        A real provider such as Kavenegar, IPPanel,
-        Melipayamak, etc. will be connected here.
-        """
+        if not settings.IPPANEL_PATTERN_CODE:
+            raise SMSServiceError(
+                "IPPANEL_PATTERN_CODE is not configured."
+            )
 
-        raise NotImplementedError(
-            "SMS provider is not configured."
+        if not settings.IPPANEL_SENDER:
+            raise SMSServiceError(
+                "IPPANEL_SENDER is not configured."
+            )
+
+        client = Client(settings.IPPANEL_API_KEY)
+
+        recipient = SMSService._normalize_recipient(mobile)
+
+        response = client.send_pattern(
+            pattern_code=settings.IPPANEL_PATTERN_CODE,
+            sender=settings.IPPANEL_SENDER,
+            recipient=recipient,
+            params={
+                "code": code,
+            },
         )
+
+        logger.info(
+            "OTP SMS sent successfully | mobile=%s | response=%s",
+            mobile,
+            response,
+        )
+
+        return True
+    

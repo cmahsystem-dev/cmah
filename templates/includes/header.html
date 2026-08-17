@@ -67,12 +67,41 @@
                 </form>
 
 
-                <a
-                    href="#"
-                    class="btn btn-primary mt-3 mt-lg-0"
-                >
-                    ورود / ثبت نام
-                </a>
+                {% if request.user.is_authenticated %}
+
+    <div class="d-flex align-items-center gap-2 mt-3 mt-lg-0">
+
+        <span class="small text-muted d-none d-xl-inline">
+            {{ request.user.mobile }}
+        </span>
+
+        <form
+            method="post"
+            action="{% url 'accounts:logout' %}"
+            class="m-0"
+        >
+            {% csrf_token %}
+
+            <button
+                type="submit"
+                class="btn btn-outline-danger"
+            >
+                خروج
+            </button>
+        </form>
+
+    </div>
+
+{% else %}
+
+    <a
+        href="{% url 'accounts:login' %}"
+        class="btn btn-primary mt-3 mt-lg-0"
+    >
+        ورود / ثبت نام
+    </a>
+
+{% endif %}
 
             </div>
 

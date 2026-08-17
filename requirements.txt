@@ -3,3 +3,4 @@ django-ckeditor-5==0.2.20
 Pillow==12.1.0
 gunicorn==23.0.0
 psycopg[binary]==3.2.10
+ippanel-python-sdk==0.1.0
