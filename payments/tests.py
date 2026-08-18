@@ -7,7 +7,10 @@ from payments.models import Payment
 from payments.services.payment_service import PaymentService
 from services.models import Service
 from cases.services.request_routing_service import RequestRoutingService
-
+from payments.services.card_to_card_payment_service import (
+    CardToCardPaymentService,
+)
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 class PaymentServiceTests(TestCase):
 
@@ -66,8 +69,12 @@ class PaymentServiceTests(TestCase):
         )
 
         self.assertEqual(
-            payment.gateway,
-            Payment.Gateway.MANUAL,
+            payment.method.code,
+            "card_to_card",
+        )
+
+        self.assertIsNone(
+            payment.gateway_provider,
         )
 
     def test_create_payment_reuses_existing_pending_payment(self):
@@ -381,3 +388,416 @@ class PaymentServiceTests(TestCase):
                 title="پرداخت با موفقیت انجام شد.",
             ).exists()
         )
+
+    def test_create_payment_rejects_inactive_method(self):
+        from django.core.exceptions import ValidationError
+
+        from payments.models import PaymentMethod
+
+        service_request = self._create_ready_request()
+
+        PaymentMethod.objects.update_or_create(
+            code="wallet",
+            defaults={
+                "title": "کیف پول",
+                "is_active": False,
+            },
+        )
+
+        with self.assertRaises(ValidationError):
+            PaymentService.create_payment(
+                service_request=service_request,
+                method_code="wallet",
+            )
+
+        self.assertFalse(
+            Payment.objects.filter(
+                service_request=service_request,
+                method__code="wallet",
+            ).exists()
+        )
+
+    def test_create_payment_rejects_gateway_without_provider(self):
+        from django.core.exceptions import ValidationError
+
+        from payments.models import PaymentMethod
+
+        service_request = self._create_ready_request()
+
+        PaymentMethod.objects.update_or_create(
+            code="gateway",
+            defaults={
+                "title": "درگاه بانکی",
+                "is_active": True,
+            },
+        )
+
+        with self.assertRaises(ValidationError):
+            PaymentService.create_payment(
+                service_request=service_request,
+                method_code="gateway",
+            )
+
+        self.assertFalse(
+            Payment.objects.filter(
+                service_request=service_request,
+                method__code="gateway",
+            ).exists()
+        )
+
+
+    def test_create_payment_with_gateway_and_active_provider(self):
+        from payments.models import GatewayProvider, PaymentMethod
+
+        service_request = self._create_ready_request()
+
+        PaymentMethod.objects.update_or_create(
+            code="gateway",
+            defaults={
+                "title": "درگاه بانکی",
+                "is_active": True,
+            },
+        )
+
+        provider, _ = GatewayProvider.objects.update_or_create(
+            code="mellat",
+            defaults={
+                "title": "بانک ملت",
+                "is_active": True,
+            },
+        )
+
+        payment = PaymentService.create_payment(
+            service_request=service_request,
+            method_code="gateway",
+            gateway_provider_code="mellat",
+        )
+
+        self.assertEqual(
+            payment.method.code,
+            "gateway",
+        )
+
+        self.assertEqual(
+            payment.gateway_provider,
+            provider,
+        )
+
+        self.assertEqual(
+            payment.status,
+            Payment.Status.PENDING,
+        )
+
+        self.assertEqual(
+            payment.amount,
+            service_request.amount,
+        )
+
+
+    def test_create_payment_rejects_provider_for_non_gateway_method(self):
+        from django.core.exceptions import ValidationError
+
+        from payments.models import GatewayProvider
+
+        service_request = self._create_ready_request()
+
+        GatewayProvider.objects.update_or_create(
+            code="mellat",
+            defaults={
+                "title": "بانک ملت",
+                "is_active": True,
+            },
+        )
+
+        with self.assertRaises(ValidationError):
+            PaymentService.create_payment(
+                service_request=service_request,
+                method_code="card_to_card",
+                gateway_provider_code="mellat",
+            )
+
+        self.assertFalse(
+            Payment.objects.filter(
+                service_request=service_request,
+            ).exists()
+        )
+
+    def test_create_payment_switches_pending_payment_method(self):
+        from payments.models import PaymentMethod
+
+        service_request = self._create_ready_request()
+
+        PaymentMethod.objects.update_or_create(
+            code="wallet",
+            defaults={
+                "title": "کیف پول",
+                "is_active": True,
+            },
+        )
+
+        first_payment = PaymentService.create_payment(
+            service_request=service_request,
+            method_code="card_to_card",
+        )
+
+        second_payment = PaymentService.create_payment(
+            service_request=service_request,
+            method_code="wallet",
+        )
+
+        first_payment.refresh_from_db()
+
+        self.assertEqual(
+            first_payment.status,
+            Payment.Status.CANCELLED,
+        )
+
+        self.assertEqual(
+            first_payment.method.code,
+            "card_to_card",
+        )
+
+        self.assertEqual(
+            second_payment.status,
+            Payment.Status.PENDING,
+        )
+
+        self.assertEqual(
+            second_payment.method.code,
+            "wallet",
+        )
+
+        self.assertNotEqual(
+            first_payment.pk,
+            second_payment.pk,
+        )
+
+        self.assertEqual(
+            Payment.objects.filter(
+                service_request=service_request,
+                status=Payment.Status.PENDING,
+            ).count(),
+            1,
+        )
+
+    def test_create_payment_rejects_when_payment_awaits_verification(self):
+        from django.core.exceptions import ValidationError
+
+        service_request = self._create_ready_request()
+
+        payment = PaymentService.create_payment(
+            service_request=service_request,
+            method_code="card_to_card",
+        )
+
+        payment.status = Payment.Status.AWAITING_VERIFICATION
+        payment.save(
+            update_fields=[
+                "status",
+                "updated_at",
+            ]
+        )
+
+        with self.assertRaises(ValidationError):
+            PaymentService.create_payment(
+                service_request=service_request,
+                method_code="card_to_card",
+            )
+
+        self.assertEqual(
+            Payment.objects.filter(
+                service_request=service_request,
+            ).count(),
+            1,
+        )
+
+        payment.refresh_from_db()
+
+        self.assertEqual(
+            payment.status,
+            Payment.Status.AWAITING_VERIFICATION,
+        )
+
+    def test_submit_card_to_card_payment_successfully(self):
+        service_request = self._create_ready_request()
+
+        payment = PaymentService.create_payment(
+            service_request=service_request,
+            method_code="card_to_card",
+        )
+
+        detail = CardToCardPaymentService.submit_payment(
+            payment=payment,
+            payer_reference="123456789",
+        )
+
+        payment.refresh_from_db()
+        detail.refresh_from_db()
+
+        self.assertEqual(
+            payment.status,
+            Payment.Status.AWAITING_VERIFICATION,
+        )
+
+        self.assertEqual(
+            detail.payment,
+            payment,
+        )
+
+        self.assertEqual(
+            detail.payer_reference,
+            "123456789",
+        )
+
+        self.assertIsNotNone(
+            detail.submitted_at,
+        )
+
+        self.assertFalse(
+            bool(detail.receipt),
+        )
+
+        self.assertIsNone(
+            detail.verified_by,
+        )
+
+        self.assertIsNone(
+            detail.verified_at,
+        )
+
+        self.assertEqual(
+            detail.rejection_reason,
+            "",
+        )
+
+    def test_submit_card_to_card_rejects_non_card_to_card_payment(self):
+        from django.core.exceptions import ValidationError
+
+        from payments.models import PaymentMethod
+
+        service_request = self._create_ready_request()
+
+        PaymentMethod.objects.update_or_create(
+            code="wallet",
+            defaults={
+                "title": "کیف پول",
+                "is_active": True,
+            },
+        )
+
+        payment = PaymentService.create_payment(
+            service_request=service_request,
+            method_code="wallet",
+        )
+
+        with self.assertRaises(ValidationError):
+            CardToCardPaymentService.submit_payment(
+                payment=payment,
+                payer_reference="123456789",
+            )
+
+        payment.refresh_from_db()
+
+        self.assertEqual(
+            payment.status,
+            Payment.Status.PENDING,
+        )
+
+        self.assertFalse(
+            hasattr(payment, "card_to_card_detail"),
+        )
+
+    def test_submit_card_to_card_rejects_non_pending_payment(self):
+        from django.core.exceptions import ValidationError
+
+        service_request = self._create_ready_request()
+
+        payment = PaymentService.create_payment(
+            service_request=service_request,
+            method_code="card_to_card",
+        )
+
+        detail = CardToCardPaymentService.submit_payment(
+            payment=payment,
+            payer_reference="123456789",
+        )
+
+        with self.assertRaises(ValidationError):
+            CardToCardPaymentService.submit_payment(
+                payment=payment,
+                payer_reference="987654321",
+            )
+
+        payment.refresh_from_db()
+        detail.refresh_from_db()
+
+        self.assertEqual(
+            payment.status,
+            Payment.Status.AWAITING_VERIFICATION,
+        )
+
+        self.assertEqual(
+            detail.payer_reference,
+            "123456789",
+        )
+
+    def test_submit_card_to_card_requires_payer_reference(self):
+        from django.core.exceptions import ValidationError
+
+        service_request = self._create_ready_request()
+
+        payment = PaymentService.create_payment(
+            service_request=service_request,
+            method_code="card_to_card",
+        )
+
+        with self.assertRaises(ValidationError):
+            CardToCardPaymentService.submit_payment(
+                payment=payment,
+                payer_reference="   ",
+            )
+
+        payment.refresh_from_db()
+
+        self.assertEqual(
+            payment.status,
+            Payment.Status.PENDING,
+        )
+
+        self.assertFalse(
+            hasattr(payment, "card_to_card_detail"),
+        )
+
+    def test_submit_card_to_card_saves_receipt(self):
+        service_request = self._create_ready_request()
+
+        payment = PaymentService.create_payment(
+            service_request=service_request,
+            method_code="card_to_card",
+        )
+
+        receipt = SimpleUploadedFile(
+            "receipt.jpg",
+            b"fake-receipt-content",
+            content_type="image/jpeg",
+        )
+
+        detail = CardToCardPaymentService.submit_payment(
+            payment=payment,
+            payer_reference="123456789",
+            receipt=receipt,
+        )
+
+        detail.refresh_from_db()
+        payment.refresh_from_db()
+
+        self.assertTrue(
+            bool(detail.receipt),
+        )
+
+        self.assertEqual(
+            payment.status,
+            Payment.Status.AWAITING_VERIFICATION,
+        )
+
+    

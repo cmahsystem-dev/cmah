@@ -1,0 +1,149 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+
+<div id="content-main">
+
+    <h1>
+        بررسی پرداخت کارت‌به‌کارت
+    </h1>
+
+    <fieldset class="module aligned">
+
+        <h2>
+            اطلاعات پرداخت
+        </h2>
+
+        <div class="form-row">
+            <div>
+                <strong>کد پیگیری درخواست:</strong>
+                {{ payment.service_request.tracking_code }}
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <strong>مبلغ:</strong>
+                {{ payment.amount }}
+                ریال
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <strong>روش پرداخت:</strong>
+                {{ payment.method.title }}
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <strong>وضعیت:</strong>
+                {{ payment.get_status_display }}
+            </div>
+        </div>
+
+    </fieldset>
+
+    <fieldset class="module aligned">
+
+        <h2>
+            اطلاعات اعلام‌شده توسط کاربر
+        </h2>
+
+        <div class="form-row">
+            <div>
+                <strong>شماره پیگیری پرداخت:</strong>
+
+                {{ detail.payer_reference }}
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <strong>زمان اعلام پرداخت:</strong>
+
+                {{ detail.submitted_at|default:"-" }}
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div>
+                <strong>رسید:</strong>
+
+                {% if detail.receipt %}
+
+                    <a
+                        href="{{ detail.receipt.url }}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        مشاهده رسید
+                    </a>
+
+                {% else %}
+
+                    رسیدی ثبت نشده است.
+
+                {% endif %}
+            </div>
+        </div>
+
+    </fieldset>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <fieldset class="module aligned">
+
+            <h2>
+                نتیجه بررسی
+            </h2>
+
+            {{ form.non_field_errors }}
+
+            <div class="form-row">
+
+                {{ form.decision.errors }}
+
+                <div>
+                    {{ form.decision }}
+                </div>
+
+            </div>
+
+            <div class="form-row">
+
+                {{ form.rejection_reason.errors }}
+
+                <div>
+                    {{ form.rejection_reason.label_tag }}
+                    {{ form.rejection_reason }}
+                </div>
+
+            </div>
+
+        </fieldset>
+
+        <div class="submit-row">
+
+            <input
+                type="submit"
+                value="ثبت نتیجه بررسی"
+                class="default"
+            >
+
+            <a
+                href="{% url 'admin:payments_payment_change' payment.pk %}"
+                class="closelink"
+            >
+                انصراف
+            </a>
+
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

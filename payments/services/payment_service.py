@@ -4,7 +4,11 @@ from django.utils import timezone
 
 from cases.models import ServiceRequest
 from cases.services.request_timeline_service import RequestTimelineService
-from payments.models import Payment
+from payments.models  import (
+    GatewayProvider,
+    Payment,
+    PaymentMethod,
+)
 
 
 class PaymentService:
@@ -14,7 +18,8 @@ class PaymentService:
     def create_payment(
         *,
         service_request: ServiceRequest,
-        gateway: str = Payment.Gateway.MANUAL,
+        method_code: str = "card_to_card",
+        gateway_provider_code: str | None = None,
     ) -> Payment:
         service_request = (
             ServiceRequest.objects
@@ -22,7 +27,10 @@ class PaymentService:
             .get(pk=service_request.pk)
         )
 
-        if service_request.status != ServiceRequest.Status.READY_FOR_PAYMENT:
+        if (
+            service_request.status
+            != ServiceRequest.Status.READY_FOR_PAYMENT
+        ):
             raise ValidationError(
                 "درخواست در وضعیت فعلی آماده پرداخت نیست."
             )
@@ -32,9 +40,50 @@ class PaymentService:
                 "این درخواست نیاز به پرداخت ندارد."
             )
 
-        if gateway not in Payment.Gateway.values:
+        method_code = method_code.strip()
+
+        if not method_code:
             raise ValidationError(
-                "درگاه پرداخت نامعتبر است."
+                "روش پرداخت الزامی است."
+            )
+
+        try:
+            method = PaymentMethod.objects.get(
+                code=method_code,
+                is_active=True,
+            )
+        except PaymentMethod.DoesNotExist:
+            raise ValidationError(
+                "روش پرداخت معتبر یا فعال نیست."
+            )
+
+        gateway_provider = None
+
+        if method.code == "gateway":
+            gateway_provider_code = (
+                gateway_provider_code or ""
+            ).strip()
+
+            if not gateway_provider_code:
+                raise ValidationError(
+                    "ارائه‌دهنده درگاه بانکی الزامی است."
+                )
+
+            try:
+                gateway_provider = (
+                    GatewayProvider.objects.get(
+                        code=gateway_provider_code,
+                        is_active=True,
+                    )
+                )
+            except GatewayProvider.DoesNotExist:
+                raise ValidationError(
+                    "ارائه‌دهنده درگاه بانکی معتبر یا فعال نیست."
+                )
+
+        elif gateway_provider_code:
+            raise ValidationError(
+                "برای این روش پرداخت نباید درگاه بانکی تعیین شود."
             )
 
         paid_payment = (
@@ -51,6 +100,21 @@ class PaymentService:
                 "این درخواست قبلاً پرداخت شده است."
             )
 
+        awaiting_verification_payment = (
+            Payment.objects
+            .select_for_update()
+            .filter(
+                service_request=service_request,
+                status=Payment.Status.AWAITING_VERIFICATION,
+            )
+            .first()
+        )
+
+        if awaiting_verification_payment is not None:
+            raise ValidationError(
+                "یک پرداخت در انتظار تأیید برای این درخواست وجود دارد."
+            )
+
         pending_payment = (
             Payment.objects
             .select_for_update()
@@ -63,12 +127,50 @@ class PaymentService:
         )
 
         if pending_payment is not None:
-            return pending_payment
+            same_method = (
+                pending_payment.method_id == method.pk
+            )
+
+            same_provider = (
+                pending_payment.gateway_provider_id
+                == (
+                    gateway_provider.pk
+                    if gateway_provider is not None
+                    else None
+                )
+            )
+
+            if same_method and same_provider:
+                return pending_payment
+
+            pending_payment.status = Payment.Status.CANCELLED
+            pending_payment.save(
+                update_fields=[
+                    "status",
+                    "updated_at",
+                ]
+            )
+
+            RequestTimelineService.record(
+                service_request=service_request,
+                event_type="payment",
+                title="روش پرداخت تغییر کرد.",
+                metadata={
+                    "payment_id": pending_payment.pk,
+                    "method": pending_payment.method.code,
+                    "gateway_provider": (
+                        pending_payment.gateway_provider.code
+                        if pending_payment.gateway_provider
+                        else None
+                    ),
+                },
+            )
 
         payment = Payment.objects.create(
             service_request=service_request,
             amount=service_request.amount,
-            gateway=gateway,
+            method=method,
+            gateway_provider=gateway_provider,
             status=Payment.Status.PENDING,
         )
 
@@ -79,7 +181,12 @@ class PaymentService:
             metadata={
                 "payment_id": payment.pk,
                 "amount": payment.amount,
-                "gateway": payment.gateway,
+                "method": payment.method.code,
+                "gateway_provider": (
+                    payment.gateway_provider.code
+                    if payment.gateway_provider
+                    else None
+                ),
             },
         )
 
@@ -128,7 +235,12 @@ class PaymentService:
         if payment.status == Payment.Status.PAID:
             return payment
 
-        if payment.status != Payment.Status.PENDING:
+        allowed_statuses = {
+            Payment.Status.PENDING,
+            Payment.Status.AWAITING_VERIFICATION,
+        }
+
+        if payment.status not in allowed_statuses:
             raise ValidationError(
                 "این پرداخت دیگر قابل تأیید نیست."
             )
@@ -180,7 +292,12 @@ class PaymentService:
             metadata={
                 "payment_id": payment.pk,
                 "amount": payment.amount,
-                "gateway": payment.gateway,
+                "method": payment.method.code,
+                "gateway_provider": (
+                    payment.gateway_provider.code
+                    if payment.gateway_provider
+                    else None
+                ),
                 "reference_id": payment.reference_id,
             },
         )
@@ -209,7 +326,12 @@ class PaymentService:
         if payment.status == Payment.Status.FAILED:
             return payment
 
-        if payment.status != Payment.Status.PENDING:
+        allowed_statuses = {
+            Payment.Status.PENDING,
+            Payment.Status.AWAITING_VERIFICATION,
+        }
+
+        if payment.status not in allowed_statuses:
             raise ValidationError(
                 "این پرداخت قابل ثبت به‌عنوان ناموفق نیست."
             )
@@ -230,7 +352,12 @@ class PaymentService:
             metadata={
                 "payment_id": payment.pk,
                 "amount": payment.amount,
-                "gateway": payment.gateway,
+                "method": payment.method.code,
+                "gateway_provider": (
+                    payment.gateway_provider.code
+                    if payment.gateway_provider
+                    else None
+                ),
             },
         )
 
@@ -274,7 +401,12 @@ class PaymentService:
             metadata={
                 "payment_id": payment.pk,
                 "amount": payment.amount,
-                "gateway": payment.gateway,
+                "method": payment.method.code,
+                "gateway_provider": (
+                    payment.gateway_provider.code
+                    if payment.gateway_provider
+                    else None
+                ),
             },
         )
 
