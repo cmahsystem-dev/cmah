@@ -4,6 +4,7 @@ from django.utils import timezone
 
 from cases.services.request_timeline_service import RequestTimelineService
 from payments.models import (
+    CardToCardDestination,
     CardToCardPaymentDetail,
     Payment,
 )
@@ -498,3 +499,91 @@ class CardToCardPaymentService:
             first_payment.pk,
             second_payment.pk,
         )
+
+    @staticmethod
+    @transaction.atomic
+    def prepare_payment(
+        *,
+        payment: Payment,
+    ) -> CardToCardPaymentDetail:
+        payment = (
+            Payment.objects
+            .select_for_update()
+            .select_related(
+                "method",
+                "service_request",
+            )
+            .get(pk=payment.pk)
+        )
+
+        if payment.method.code != "card_to_card":
+            raise ValidationError(
+                "این پرداخت از نوع کارت‌به‌کارت نیست."
+            )
+
+        if payment.status != Payment.Status.PENDING:
+            raise ValidationError(
+                "این پرداخت در وضعیت فعلی قابل آماده‌سازی نیست."
+            )
+
+        destination = (
+            CardToCardDestination.objects
+            .filter(
+                is_active=True,
+            )
+            .order_by(
+                "priority",
+                "id",
+            )
+            .first()
+        )
+
+        if destination is None:
+            raise ValidationError(
+                "هیچ کارت مقصد فعالی برای پرداخت کارت‌به‌کارت تعریف نشده است."
+            )
+
+        detail, created = (
+            CardToCardPaymentDetail.objects
+            .select_for_update()
+            .get_or_create(
+                payment=payment,
+            )
+        )
+
+        if created or detail.destination_id is None:
+            detail.destination = destination
+
+            detail.destination_title = (
+                destination.title
+            )
+
+            detail.destination_card_number = (
+                destination.card_number
+            )
+
+            detail.destination_iban = (
+                destination.iban
+            )
+
+            detail.destination_account_holder = (
+                destination.account_holder
+            )
+
+            detail.destination_bank_name = (
+                destination.bank_name
+            )
+
+            detail.save(
+                update_fields=[
+                    "destination",
+                    "destination_title",
+                    "destination_card_number",
+                    "destination_iban",
+                    "destination_account_holder",
+                    "destination_bank_name",
+                    "updated_at",
+                ]
+            )
+
+        return detail

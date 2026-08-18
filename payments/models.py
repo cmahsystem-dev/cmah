@@ -227,6 +227,72 @@ class Payment(models.Model):
             f"{self.get_status_display()}"
         )
 
+    
+class CardToCardDestination(models.Model):
+    title = models.CharField(
+        max_length=100,
+        verbose_name="عنوان",
+    )
+
+    card_number = models.CharField(
+        max_length=32,
+        verbose_name="شماره کارت",
+    )
+
+    iban = models.CharField(
+        max_length=34,
+        blank=True,
+        verbose_name="شماره شبا",
+    )
+
+    account_holder = models.CharField(
+        max_length=150,
+        verbose_name="نام صاحب حساب",
+    )
+
+    bank_name = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="نام بانک",
+    )
+
+    description = models.TextField(
+        blank=True,
+        verbose_name="توضیحات",
+    )
+
+    is_active = models.BooleanField(
+        default=True,
+        db_index=True,
+        verbose_name="فعال",
+    )
+
+    priority = models.PositiveIntegerField(
+        default=0,
+        db_index=True,
+        verbose_name="اولویت نمایش",
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="زمان ایجاد",
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name="آخرین بروزرسانی",
+    )
+
+    class Meta:
+        ordering = [
+            "priority",
+            "id",
+        ]
+        verbose_name = "کارت مقصد کارت‌به‌کارت"
+        verbose_name_plural = "کارت‌های مقصد کارت‌به‌کارت"
+
+    def __str__(self):
+        return self.title
 
 class CardToCardPaymentDetail(models.Model):
     payment = models.OneToOneField(
@@ -234,6 +300,45 @@ class CardToCardPaymentDetail(models.Model):
         on_delete=models.PROTECT,
         related_name="card_to_card_detail",
         verbose_name="پرداخت",
+    )
+
+    destination = models.ForeignKey(
+        CardToCardDestination,
+        on_delete=models.PROTECT,
+        related_name="payment_details",
+        null=True,
+        blank=True,
+        verbose_name="کارت مقصد",
+    )
+
+    destination_title = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="عنوان مقصد در زمان پرداخت",
+    )
+
+    destination_card_number = models.CharField(
+        max_length=32,
+        blank=True,
+        verbose_name="شماره کارت مقصد در زمان پرداخت",
+    )
+
+    destination_iban = models.CharField(
+        max_length=34,
+        blank=True,
+        verbose_name="شماره شبای مقصد در زمان پرداخت",
+    )
+
+    destination_account_holder = models.CharField(
+        max_length=150,
+        blank=True,
+        verbose_name="صاحب حساب در زمان پرداخت",
+    )
+
+    destination_bank_name = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="بانک مقصد در زمان پرداخت",
     )
 
     payer_reference = models.CharField(

@@ -6,6 +6,7 @@ from django.urls import path, reverse
 from django.utils.html import format_html
 
 from payments.models import (
+    CardToCardDestination,
     CardToCardPaymentDetail,
     GatewayProvider,
     Payment,
@@ -309,6 +310,135 @@ class CardToCardPaymentDetailInline(
         obj=None,
     ):
         return False
+
+
+@admin.register(CardToCardDestination)
+class CardToCardDestinationAdmin(admin.ModelAdmin):
+    list_display = (
+        "title",
+        "bank_name",
+        "masked_card_number",
+        "account_holder",
+        "is_active",
+        "priority",
+        "payment_count",
+        "updated_at",
+    )
+
+    list_filter = (
+        "is_active",
+        "bank_name",
+    )
+
+    search_fields = (
+        "title",
+        "card_number",
+        "iban",
+        "account_holder",
+        "bank_name",
+    )
+
+    ordering = (
+        "priority",
+        "id",
+    )
+
+    list_editable = (
+        "is_active",
+        "priority",
+    )
+
+    readonly_fields = (
+        "payment_count",
+        "created_at",
+        "updated_at",
+    )
+
+    fieldsets = (
+        (
+            "اطلاعات کارت",
+            {
+                "fields": (
+                    "title",
+                    "card_number",
+                    "iban",
+                    "account_holder",
+                    "bank_name",
+                    "description",
+                ),
+            },
+        ),
+        (
+            "وضعیت",
+            {
+                "fields": (
+                    "is_active",
+                    "priority",
+                ),
+            },
+        ),
+        (
+            "اطلاعات سیستم",
+            {
+                "fields": (
+                    "payment_count",
+                    "created_at",
+                    "updated_at",
+                ),
+            },
+        ),
+    )
+
+    def get_actions(self, request):
+        actions = super().get_actions(request)
+        actions.pop("delete_selected", None)
+        return actions
+
+    def has_delete_permission(
+        self,
+        request,
+        obj=None,
+    ):
+        if (
+            obj is not None
+            and obj.payment_details.exists()
+        ):
+            return False
+
+        return super().has_delete_permission(
+            request,
+            obj,
+        )
+
+    @admin.display(
+        description="شماره کارت",
+    )
+    def masked_card_number(self, obj):
+        number = obj.card_number.replace(
+            " ",
+            "",
+        ).replace(
+            "-",
+            "",
+        )
+
+        if len(number) < 8:
+            return obj.card_number
+
+        return (
+            f"{number[:4]}-"
+            f"****-****-"
+            f"{number[-4:]}"
+        )
+
+    @admin.display(
+        description="تعداد پرداخت‌ها",
+    )
+    def payment_count(self, obj):
+        if not obj.pk:
+            return 0
+
+        return obj.payment_details.count()
 
 
 @admin.register(Payment)

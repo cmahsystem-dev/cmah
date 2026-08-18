@@ -3,7 +3,10 @@ from django.test import TestCase
 
 from accounts.models import User
 from cases.models import ServiceRequest
-from payments.models import Payment
+from payments.models import (
+    CardToCardDestination,
+    Payment
+)
 from payments.services.payment_service import PaymentService
 from services.models import Service
 from cases.services.request_routing_service import RequestRoutingService
@@ -800,4 +803,135 @@ class PaymentServiceTests(TestCase):
             Payment.Status.AWAITING_VERIFICATION,
         )
 
-    
+    def test_prepare_card_to_card_payment_uses_active_destination(self):
+        service_request = self._create_ready_request()
+
+        destination = CardToCardDestination.objects.create(
+            title="کارت اصلی CMAH",
+            card_number="6037991234567890",
+            iban="IR120000000000000000000000",
+            account_holder="CMAH",
+            bank_name="بانک تست",
+            is_active=True,
+            priority=10,
+        )
+
+        payment = PaymentService.create_payment(
+            service_request=service_request,
+            method_code="card_to_card",
+        )
+
+        detail = CardToCardPaymentService.prepare_payment(
+            payment=payment,
+        )
+
+        self.assertEqual(
+            detail.destination,
+            destination,
+        )
+
+        self.assertEqual(
+            detail.destination_title,
+            destination.title,
+        )
+
+        self.assertEqual(
+            detail.destination_card_number,
+            destination.card_number,
+        )
+
+        self.assertEqual(
+            detail.destination_iban,
+            destination.iban,
+        )
+
+        self.assertEqual(
+            detail.destination_account_holder,
+            destination.account_holder,
+        )
+
+        self.assertEqual(
+            detail.destination_bank_name,
+            destination.bank_name,
+        )
+
+    def test_prepare_card_to_card_payment_preserves_snapshot(self):
+        service_request = self._create_ready_request()
+
+        destination = CardToCardDestination.objects.create(
+            title="کارت اصلی CMAH",
+            card_number="6037991234567890",
+            account_holder="CMAH",
+            bank_name="بانک تست",
+            is_active=True,
+            priority=10,
+        )
+
+        payment = PaymentService.create_payment(
+            service_request=service_request,
+            method_code="card_to_card",
+        )
+
+        detail = CardToCardPaymentService.prepare_payment(
+            payment=payment,
+        )
+
+        original_card_number = (
+            detail.destination_card_number
+        )
+
+        destination.card_number = "5892109876543210"
+        destination.save(
+            update_fields=[
+                "card_number",
+                "updated_at",
+            ]
+        )
+
+        detail = CardToCardPaymentService.prepare_payment(
+            payment=payment,
+        )
+
+        detail.refresh_from_db()
+
+        self.assertEqual(
+            detail.destination_card_number,
+            original_card_number,
+        )
+
+        self.assertNotEqual(
+            detail.destination_card_number,
+            destination.card_number,
+        )
+
+    def test_prepare_card_to_card_payment_requires_active_destination(self):
+        from django.core.exceptions import ValidationError
+
+        service_request = self._create_ready_request()
+
+        CardToCardDestination.objects.create(
+            title="کارت غیرفعال",
+            card_number="6037991234567890",
+            account_holder="CMAH",
+            bank_name="بانک تست",
+            is_active=False,
+            priority=10,
+        )
+
+        payment = PaymentService.create_payment(
+            service_request=service_request,
+            method_code="card_to_card",
+        )
+
+        with self.assertRaises(ValidationError):
+            CardToCardPaymentService.prepare_payment(
+                payment=payment,
+            )
+
+        payment.refresh_from_db()
+
+        self.assertEqual(
+            payment.status,
+            Payment.Status.PENDING,
+        )
+        
