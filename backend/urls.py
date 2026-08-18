@@ -57,6 +57,11 @@ urlpatterns = [
         "",
         include("cms.urls"),
     ),
+
+        path(
+        "requests/",
+        include("cases.urls"),
+    ),
 ]
 
 

@@ -1,0 +1,215 @@
+{% extends "layouts/base.html" %}
+{% load payment_filters %}
+{% block title %}
+پرداخت کارت‌به‌کارت {{ service_request.tracking_code }}
+{% endblock %}
+
+{% block content %}
+
+<div class="container py-5">
+
+    <div class="mb-4">
+        <h1 class="h3">
+            پرداخت کارت‌به‌کارت
+        </h1>
+
+        <div class="text-muted">
+            کد پیگیری درخواست:
+            <strong>
+                {{ service_request.tracking_code }}
+            </strong>
+        </div>
+    </div>
+
+    <div class="row g-4">
+
+        <div class="col-lg-7">
+
+            <div class="card h-100">
+                <div class="card-body">
+
+                    <h2 class="h5 mb-4">
+                        اطلاعات کارت مقصد
+                    </h2>
+
+                    <div class="mb-3">
+                        <div class="text-muted small">
+                            مبلغ قابل پرداخت
+                        </div>
+
+                        <div class="fs-4 fw-bold">
+                            {{ payment.amount }}
+                            ریال
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="mb-3">
+                        <div class="text-muted small">
+                            عنوان
+                        </div>
+
+                        <strong>
+                            {{ detail.destination_title }}
+                        </strong>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="text-muted small">
+                            شماره کارت
+                        </div>
+
+                        <div class="d-flex align-items-center gap-2">
+
+                            <div class="fs-5 fw-bold" dir="ltr" id="destination-card-number">
+                                {{ detail.destination_card_number|group_digits }}
+                            </div>
+
+                            <button type="button" class="btn btn-sm btn-outline-secondary copy-payment-value"
+                                data-copy-value="{{ detail.destination_card_number }}" title="کپی شماره کارت"
+                                aria-label="کپی شماره کارت">
+                                <i class="bi bi-copy"></i>
+                                <span class="copy-label">کپی</span>
+                            </button>
+
+                        </div>
+                    </div>
+
+                    {% if detail.destination_iban %}
+                    <div class="mb-3">
+                        <div class="text-muted small">
+                            شماره شبا
+                        </div>
+
+                        <div class="d-flex align-items-center gap-2">
+
+                            <div dir="ltr" id="destination-iban">
+                                {{ detail.destination_iban|group_digits }}
+                            </div>
+
+                            <button type="button" class="btn btn-sm btn-outline-secondary copy-payment-value"
+                                data-copy-value="{{ detail.destination_iban }}" title="کپی شماره شبا"
+                                aria-label="کپی شماره شبا">
+                                <i class="bi bi-copy"></i>
+                                <span class="copy-label">کپی</span>
+                            </button>
+
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <div class="text-muted small">
+                            صاحب حساب
+                        </div>
+
+                        <strong>
+                            {{ detail.destination_account_holder }}
+                        </strong>
+                    </div>
+
+                    {% if detail.destination_bank_name %}
+                    <div class="mb-0">
+                        <div class="text-muted small">
+                            بانک
+                        </div>
+
+                        <strong>
+                            {{ detail.destination_bank_name }}
+                        </strong>
+                    </div>
+                    {% endif %}
+
+                </div>
+            </div>
+
+        </div>
+
+        <div class="col-lg-5">
+
+            <div class="card">
+                <div class="card-body">
+
+                    <h2 class="h5 mb-3">
+                        بعد از انتقال وجه
+                    </h2>
+
+                    <p class="text-muted">
+                        پس از انجام کارت‌به‌کارت، شماره پیگیری پرداخت را وارد کنید.
+                        در صورت داشتن رسید، می‌توانید تصویر آن را نیز ارسال کنید.
+                    </p>
+
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+
+                            <label for="payer_reference" class="form-label">
+                                شماره پیگیری پرداخت
+                                <span class="text-danger">*</span>
+                            </label>
+
+                            <input type="text" id="payer_reference" name="payer_reference" class="form-control"
+                                required>
+
+                        </div>
+
+                        <div class="mb-4">
+
+                            <label for="receipt" class="form-label">
+                                تصویر رسید
+                            </label>
+
+                            <input type="file" id="receipt" name="receipt" class="form-control" accept="image/*">
+
+                        </div>
+
+                        <div class="d-grid">
+
+                            <button type="submit" class="btn btn-primary">
+                                ثبت اطلاعات پرداخت
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        document
+            .querySelectorAll(".copy-payment-value")
+            .forEach((button) => {
+                button.addEventListener("click", async () => {
+                    const value = button.dataset.copyValue;
+                    const label = button.querySelector(".copy-label");
+
+                    try {
+                        await navigator.clipboard.writeText(value);
+
+                        const originalText = label.textContent;
+
+                        label.textContent = "کپی شد";
+
+                        setTimeout(() => {
+                            label.textContent = originalText;
+                        }, 1500);
+                    } catch (error) {
+                        console.error(
+                            "Unable to copy payment value.",
+                            error
+                        );
+                    }
+                });
+            });
+    });
+</script>
+{% endblock %}

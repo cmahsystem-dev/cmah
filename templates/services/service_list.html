@@ -14,27 +14,34 @@
 
         <div class="col-md-6 col-lg-4">
 
-            <div class="card h-100 shadow-sm">
+            <a
+                href="{% url 'services:service_detail' service.slug %}"
+                class="text-decoration-none text-reset d-block h-100"
+            >
 
-                <div class="card-body">
+                <div class="card h-100 shadow-sm">
 
-                    <h5 class="card-title">
-                        {{ service.title }}
-                    </h5>
+                    <div class="card-body">
 
-                    <p class="text-muted">
-                        {{ service.short_description }}
-                    </p>
+                        <h5 class="card-title">
+                            {{ service.title }}
+                        </h5>
 
-                    {% if service.category %}
-                        <span class="badge bg-primary">
-                            {{ service.category.name }}
-                        </span>
-                    {% endif %}
+                        <p class="text-muted">
+                            {{ service.short_description }}
+                        </p>
+
+                        {% if service.category %}
+                            <span class="badge bg-primary">
+                                {{ service.category.name }}
+                            </span>
+                        {% endif %}
+
+                    </div>
 
                 </div>
 
-            </div>
+            </a>
 
         </div>
 

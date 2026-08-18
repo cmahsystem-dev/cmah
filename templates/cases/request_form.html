@@ -1,0 +1,225 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+ثبت درخواست {{ service_request.service.title }}
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+
+    <div class="mb-4">
+        <h1 class="h3">
+            ثبت درخواست {{ service_request.service.title }}
+        </h1>
+
+        <div class="text-muted">
+            کد پیگیری:
+            <strong>
+                {{ service_request.tracking_code }}
+            </strong>
+        </div>
+    </div>
+
+    <form
+        method="post"
+        enctype="multipart/form-data"
+    >
+        {% csrf_token %}
+
+        {% for field in form_schema %}
+
+            <div class="mb-4">
+
+                {% if field.type != "checkbox" %}
+                    <label
+                        for="field_{{ field.key }}"
+                        class="form-label"
+                    >
+                        {{ field.label }}
+
+                        {% if field.required %}
+                            <span class="text-danger">
+                                *
+                            </span>
+                        {% endif %}
+                    </label>
+                {% endif %}
+
+                {% if field.type == "text" %}
+
+                    <input
+                        type="text"
+                        id="field_{{ field.key }}"
+                        name="{{ field.key }}"
+                        class="form-control"
+                        placeholder="{{ field.placeholder }}"
+                        value="{{ field.value|default_if_none:'' }}"
+                        {% if field.required %}
+                            required
+                        {% endif %}
+                    >
+
+                {% elif field.type == "number" %}
+
+                    <input
+                        type="number"
+                        id="field_{{ field.key }}"
+                        name="{{ field.key }}"
+                        class="form-control"
+                        placeholder="{{ field.placeholder }}"
+                        value="{{ field.value|default_if_none:'' }}"
+                        {% if field.required %}
+                            required
+                        {% endif %}
+                    >
+
+                {% elif field.type == "date" %}
+
+                    <input
+                        type="date"
+                        id="field_{{ field.key }}"
+                        name="{{ field.key }}"
+                        class="form-control"
+                        value="{{ field.value|default_if_none:'' }}"
+                        {% if field.required %}
+                            required
+                        {% endif %}
+                    >
+
+                {% elif field.type == "select" %}
+
+                    <select
+                        id="field_{{ field.key }}"
+                        name="{{ field.key }}"
+                        class="form-select"
+                        {% if field.required %}
+                            required
+                        {% endif %}
+                    >
+                        <option value="">
+                            انتخاب کنید
+                        </option>
+
+                        {% for choice in field.choices %}
+                            <option
+                                value="{{ choice.value }}"
+                                {% if field.value == choice.value %}
+                                    selected
+                                {% endif %}
+                            >
+                                {{ choice.label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+
+                {% elif field.type == "radio" %}
+
+                    <div>
+                        {% for choice in field.choices %}
+
+                            <div class="form-check">
+
+                                <input
+                                    type="radio"
+                                    id="field_{{ field.key }}_{{ forloop.counter }}"
+                                    name="{{ field.key }}"
+                                    value="{{ choice.value }}"
+                                    class="form-check-input"
+                                    {% if field.value == choice.value %}
+                                        checked
+                                    {% endif %}
+                                    {% if field.required %}
+                                        required
+                                    {% endif %}
+                                >
+
+                                <label
+                                    class="form-check-label"
+                                    for="field_{{ field.key }}_{{ forloop.counter }}"
+                                >
+                                    {{ choice.label }}
+                                </label>
+
+                            </div>
+
+                        {% endfor %}
+                    </div>
+
+                {% elif field.type == "checkbox" %}
+
+                    <div class="form-check">
+
+                        <input
+                            type="checkbox"
+                            id="field_{{ field.key }}"
+                            name="{{ field.key }}"
+                            value="1"
+                            class="form-check-input"
+                            {% if field.value %}
+                                checked
+                            {% endif %}
+                            {% if field.required %}
+                                required
+                            {% endif %}
+                        >
+
+                        <label
+                            class="form-check-label"
+                            for="field_{{ field.key }}"
+                        >
+                            {{ field.label }}
+
+                            {% if field.required %}
+                                <span class="text-danger">
+                                    *
+                                </span>
+                            {% endif %}
+                        </label>
+
+                    </div>
+
+                {% elif field.type == "file" %}
+
+                    <input
+                        type="file"
+                        id="field_{{ field.key }}"
+                        name="{{ field.key }}"
+                        class="form-control"
+                        {% if field.required %}
+                            required
+                        {% endif %}
+                    >
+
+                {% endif %}
+
+                {% if field.help_text %}
+                    <div class="form-text">
+                        {{ field.help_text }}
+                    </div>
+                {% endif %}
+
+            </div>
+
+        {% empty %}
+
+            <div class="alert alert-warning">
+                هنوز فیلدی برای این خدمت تعریف نشده است.
+            </div>
+
+        {% endfor %}
+
+        <div class="d-grid d-md-flex justify-content-md-end">
+
+            <button
+                type="submit"
+                class="btn btn-primary px-4"
+            >
+                ادامه و ثبت درخواست
+            </button>
+
+        </div>
+
+    </form>
+
+</div>
+{% endblock %}

@@ -14,7 +14,7 @@
 
 {% block content %}
 
-{% include "includes/header.html" %}
+
 
 <!-- ================= Breadcrumb ================= -->
 
@@ -309,12 +309,19 @@
 
             </p>
 
-            <a href="#"
-               class="btn btn-light btn-lg">
+            <form
+    method="post"
+    action="{% url 'cases:start_request' service.slug %}"
+>
+    {% csrf_token %}
 
-                شروع ثبت درخواست
-
-            </a>
+    <button
+        type="submit"
+        class="btn btn-primary"
+    >
+        شروع ثبت درخواست
+    </button>
+</form>
 
         </div>
 
@@ -322,6 +329,6 @@
 
 </section>
 
-{% include "includes/footer.html" %}
+
 
 {% endblock %}

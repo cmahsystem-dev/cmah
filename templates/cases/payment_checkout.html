@@ -1,0 +1,97 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+پرداخت درخواست {{ service_request.tracking_code }}
+{% endblock %}
+
+{% block content %}
+
+<div class="container py-5">
+
+    <div class="mb-4">
+        <h1 class="h3">
+            پرداخت درخواست
+        </h1>
+
+        <div class="text-muted">
+            کد پیگیری:
+            <strong>
+                {{ service_request.tracking_code }}
+            </strong>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+
+            <h2 class="h5">
+                {{ service_request.service.title }}
+            </h2>
+
+            <div class="mt-3">
+                مبلغ قابل پرداخت:
+                <strong>
+                    {{ service_request.amount }}
+                    ریال
+                </strong>
+            </div>
+
+            <hr>
+
+            <h3 class="h6 mb-3">
+                روش پرداخت
+            </h3>
+
+            {% if payment_methods %}
+
+            <div class="list-group">
+
+                {% for method in payment_methods %}
+
+                <form method="post" action="{% url 'cases:select_payment_method' service_request.tracking_code %}"
+                    class="mb-3">
+                    {% csrf_token %}
+
+                    <input type="hidden" name="method" value="{{ method.code }}">
+
+                    <button type="submit" class="list-group-item list-group-item-action w-100 text-start">
+                        <div class="d-flex align-items-center gap-3">
+
+                            {% if method.icon %}
+                            <i class="{{ method.icon }} fs-4"></i>
+                            {% endif %}
+
+                            <div>
+                                <strong>
+                                    {{ method.title }}
+                                </strong>
+
+                                {% if method.description %}
+                                <div class="small text-muted mt-1">
+                                    {{ method.description }}
+                                </div>
+                                {% endif %}
+                            </div>
+
+                        </div>
+                    </button>
+                </form>
+
+                {% endfor %}
+
+            </div>
+
+            {% else %}
+
+            <div class="alert alert-warning mb-0">
+                در حال حاضر روش پرداخت فعالی وجود ندارد.
+            </div>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

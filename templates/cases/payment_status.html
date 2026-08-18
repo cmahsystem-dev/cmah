@@ -1,0 +1,69 @@
+
+{% extends "layouts/base.html" %}
+
+{% block title %}
+وضعیت پرداخت {{ service_request.tracking_code }}
+{% endblock %}
+
+{% block content %}
+
+<div class="container py-5">
+
+    <div class="card">
+        <div class="card-body text-center py-5">
+
+            <h1 class="h4 mb-3">
+                وضعیت پرداخت
+            </h1>
+
+            <div class="text-muted mb-4">
+                کد پیگیری درخواست:
+                <strong>
+                    {{ service_request.tracking_code }}
+                </strong>
+            </div>
+
+            {% if payment.status == "awaiting_verification" %}
+
+                <div class="alert alert-warning">
+                    اطلاعات پرداخت شما ثبت شده و در انتظار بررسی است.
+                </div>
+
+            {% elif payment.status == "paid" %}
+
+                <div class="alert alert-success">
+                    پرداخت شما با موفقیت تأیید شده است.
+                </div>
+
+            {% elif payment.status == "failed" %}
+
+                <div class="alert alert-danger">
+                    پرداخت شما تأیید نشد.
+                </div>
+
+            {% elif payment.status == "pending" %}
+
+                <div class="alert alert-info">
+                    پرداخت هنوز تکمیل نشده است.
+                </div>
+
+            {% elif payment.status == "cancelled" %}
+
+                <div class="alert alert-secondary">
+                    این تلاش پرداخت لغو شده است.
+                </div>
+
+            {% endif %}
+
+            <div class="mt-4">
+                <strong>مبلغ:</strong>
+                {{ payment.amount }}
+                ریال
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

@@ -1,184 +1,120 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
+
 <head>
 
 
     {% load static %}
 
-<meta charset="UTF-8">
+    <meta charset="UTF-8">
 
-<meta
-    http-equiv="X-UA-Compatible"
-    content="IE=edge"
->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
-<meta
-    name="format-detection"
-    content="telephone=no"
->
+    <meta name="format-detection" content="telephone=no">
 
-<meta
-    name="viewport"
-    content="width=device-width, initial-scale=1"
->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
 
-<title>
-    {% block title %}
+    <title>
+        {% block title %}
         {{ site.seo_title|default:site.site_name|default:"CMAH | مرکز خدمات آنلاین" }}
+        {% endblock %}
+    </title>
+
+
+    <meta name="description"
+        content="{% block meta_description %}{{ site.seo_description|default:'کارهای اداری را آنلاین، سریع و مطمئن انجام دهید.' }}{% endblock %}">
+
+
+    {% block seo %}
+
+    <link rel="canonical" href="{{ request.build_absolute_uri }}">
+
+
+    <meta property="og:type" content="website">
+
+
+    <meta property="og:title" content="{{ site.seo_title|default:site.site_name }}">
+
+
+    <meta property="og:description" content="{{ site.seo_description }}">
+
+
+    {% if site.default_og_image %}
+
+    <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{{ site.default_og_image.url }}">
+
+    {% endif %}
+
+
+    <meta name="twitter:card" content="summary_large_image">
+
+
     {% endblock %}
-</title>
-
-
-<meta
-    name="description"
-    content="{% block meta_description %}{{ site.seo_description|default:'کارهای اداری را آنلاین، سریع و مطمئن انجام دهید.' }}{% endblock %}"
->
-
-
-{% block seo %}
-
-<link
-    rel="canonical"
-    href="{{ request.build_absolute_uri }}"
->
-
-
-<meta
-    property="og:type"
-    content="website"
->
-
-
-<meta
-    property="og:title"
-    content="{{ site.seo_title|default:site.site_name }}"
->
-
-
-<meta
-    property="og:description"
-    content="{{ site.seo_description }}"
->
-
-
-{% if site.default_og_image %}
-
-<meta
-    property="og:image"
-    content="{{ request.scheme }}://{{ request.get_host }}{{ site.default_og_image.url }}"
->
-
-{% endif %}
-
-
-<meta
-    name="twitter:card"
-    content="summary_large_image"
->
-
-
-{% endblock %}
 
 
 
-<meta
-    name="author"
-    content="CMAH"
->
+    <meta name="author" content="CMAH">
 
 
-<meta
-    name="generator"
-    content="Django"
->
+    <meta name="generator" content="Django">
 
 
-<meta
-    name="theme-color"
-    content="#2563EB"
->
+    <meta name="theme-color" content="#2563EB">
 
 
-<meta
-    name="robots"
-    content="index,follow"
->
+    <meta name="robots" content="index,follow">
 
 
 
-{% if site.favicon %}
+    {% if site.favicon %}
 
-<link
-    rel="icon"
-    href="{{ site.favicon.url }}"
->
+    <link rel="icon" href="{{ site.favicon.url }}">
 
-{% else %}
+    {% else %}
 
-<link
-    rel="icon"
-    href="{% static 'images/favicon.ico' %}"
->
+    <link rel="icon" href="{% static 'images/favicon.ico' %}">
 
-{% endif %}
+    {% endif %}
 
 
 
-<!-- Bootstrap RTL -->
+    <!-- Bootstrap RTL -->
 
-<link
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.rtl.min.css"
-    rel="stylesheet"
->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
 
 
-<!-- Bootstrap Icons -->
+    <!-- Bootstrap Icons -->
 
-<link
-    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
-    rel="stylesheet"
->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" rel="stylesheet">
 
 
-<!-- Vazirmatn -->
+    <!-- Vazirmatn -->
 
-<link
-    rel="preconnect"
-    href="https://fonts.googleapis.com"
->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
 
 
-<link
-    rel="preconnect"
-    href="https://fonts.gstatic.com"
-    crossorigin
->
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
 
-<link
-    href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap"
-    rel="stylesheet"
->
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
 
 
 
-<!-- Main CSS -->
+    <!-- Main CSS -->
 
-<link
-    rel="stylesheet"
-    href="{% static 'css/style.css' %}"
->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
 
 
 
-{% block extra_css %}
-{% endblock %}
+    {% block extra_css %}
+    {% endblock %}
 
-{% block schema %}
+    {% block schema %}
 
-<script type="application/ld+json">
+    <script type="application/ld+json">
 {
     "@context": "https://schema.org",
     "@type": "Organization",
@@ -205,7 +141,7 @@
 </script>
 
 
-<script type="application/ld+json">
+    <script type="application/ld+json">
 {
     "@context": "https://schema.org",
     "@type": "WebSite",
@@ -217,7 +153,7 @@
 </script>
 
 
-<script type="application/ld+json">
+    <script type="application/ld+json">
 {
     "@context": "https://schema.org",
 
@@ -253,10 +189,10 @@
 }
 </script>
 
-{% endblock %}
+    {% endblock %}
 
-{% block extra_head %}
-{% endblock %}
+    {% block extra_head %}
+    {% endblock %}
 
 </head>
 
@@ -265,6 +201,19 @@
     {% include "includes/header.html" %}
 
     <main>
+
+        {% if messages %}
+        <div class="container mt-3">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+                {{ message }}
+
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="بستن"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
 
         {% block content %}
         {% endblock %}
