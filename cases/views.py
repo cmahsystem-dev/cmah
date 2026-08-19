@@ -77,10 +77,22 @@ def request_form(request, tracking_code):
             user=request.user,
         )
 
-        messages.success(
-            request,
-            "درخواست شما با موفقیت ثبت شد.",
-        )
+        if service_request.status == ServiceRequest.Status.READY_FOR_PAYMENT:
+            messages.success(
+                request,
+                "اطلاعات درخواست شما ثبت شد. برای تکمیل درخواست، پرداخت هزینه را انجام دهید."
+            )
+        else:
+            if service_request.status == ServiceRequest.Status.READY_FOR_PAYMENT:
+                messages.success(
+                    request,
+                    "اطلاعات درخواست شما ثبت شد. برای تکمیل درخواست، پرداخت هزینه را انجام دهید."
+                )
+            else:
+                messages.success(
+                    request,
+                    "درخواست شما با موفقیت ثبت نهایی شد."
+                )
 
         if (
             service_request.status
