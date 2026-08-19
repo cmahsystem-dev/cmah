@@ -5,6 +5,7 @@ from .models import (
     ServiceCategory,
     Service,
     ServiceFAQ,
+    ServiceField,
 )
 
 
@@ -22,7 +23,31 @@ class ServiceFAQInline(admin.TabularInline):
         "sort_order",
         "is_active",
     )
+    
+# =====================================================
+# Service Field Inline
+# =====================================================
 
+class ServiceFieldInline(admin.TabularInline):
+    model = ServiceField
+    extra = 0
+
+    fields = (
+        "key",
+        "label",
+        "field_type",
+        "required",
+        "reusable",
+        "order",
+        "is_active",
+    )
+
+    ordering = (
+        "order",
+        "id",
+    )
+
+    show_change_link = True
 
 # =====================================================
 # Category Admin
@@ -64,6 +89,7 @@ class ServiceCategoryAdmin(admin.ModelAdmin):
 class ServiceAdmin(admin.ModelAdmin):
 
     inlines = [
+        ServiceFieldInline,
         ServiceFAQInline,
     ]
 
@@ -264,3 +290,102 @@ class ServiceFAQAdmin(admin.ModelAdmin):
         "service",
         "sort_order",
     )
+
+
+
+@admin.register(ServiceField)
+class ServiceFieldAdmin(admin.ModelAdmin):
+
+    list_display = (
+        "label",
+        "service",
+        "key",
+        "field_type",
+        "required",
+        "reusable",
+        "order",
+        "is_active",
+    )
+
+    list_display_links = (
+        "label",
+    )
+
+    list_filter = (
+        "service",
+        "field_type",
+        "required",
+        "reusable",
+        "is_active",
+    )
+
+    list_editable = (
+        "required",
+        "reusable",
+        "order",
+        "is_active",
+    )
+
+    search_fields = (
+        "label",
+        "key",
+        "service__title",
+        "help_text",
+        "placeholder",
+    )
+
+    ordering = (
+        "service",
+        "order",
+        "id",
+    )
+
+    readonly_fields = (
+        "created_at",
+        "updated_at",
+    )
+
+    fieldsets = (
+        (
+            "فیلد خدمت",
+            {
+                "fields": (
+                    "service",
+                    "key",
+                    "label",
+                    "field_type",
+                ),
+            },
+        ),
+        (
+            "رفتار فیلد",
+            {
+                "fields": (
+                    "required",
+                    "reusable",
+                    "order",
+                    "is_active",
+                ),
+            },
+        ),
+        (
+            "راهنما و نمایش",
+            {
+                "fields": (
+                    "help_text",
+                    "placeholder",
+                    "choices",
+                ),
+            },
+        ),
+        (
+            "اطلاعات سیستم",
+            {
+                "classes": ("collapse",),
+                "fields": (
+                    "created_at",
+                    "updated_at",
+                ),
+            },
+        ),
+    )    
